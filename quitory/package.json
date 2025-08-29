@@ -14,7 +14,9 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "android": "npm run build && npx cap sync && npx cap open android",
+    "ios": "npm run build && npx cap sync && npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
