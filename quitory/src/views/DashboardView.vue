@@ -172,15 +172,6 @@
   }
 
   .progress-bar {
-    width: 100%;
-  }
-
-  /* Spacing stays the same */
-  .progress {
-    margin: 14px auto 10px;
-  }
-
-  .progress-bar {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
