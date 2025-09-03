@@ -4,6 +4,7 @@
     "strict": true
   },
   "files": [],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "capacitor.config.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"
