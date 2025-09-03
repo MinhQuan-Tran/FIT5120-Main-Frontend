@@ -1,1097 +1,734 @@
 <!-- src/views/ProfileView.vue -->
-<script lang="ts">
-export default {
-  name: 'ProfileView',
-
-  data() {
-    return {
-      // --- Fetch toggle ---
-      USE_API: false,
-      API_URL: '/api/user/profile',
-
-      // --- Reactive 'now' (updates at midnight) ---
-      now: new Date() as Date,
-      midnightTimer: 0 as any,
-
-      // --- Computed stats (recalculated) ---
-      stats: { daysClean: 0, badges: 0, saved: 0 },
-
-      // --- Profile info (from API or mock) ---
-      form: {
-        fullName: 'Alex Johnson',
-        email: 'alex.johnson@email.com',
-        avatarUrl: 'https://i.pravatar.cc/160?img=13',
-        quitDate: '2025-03-15', // YYYY-MM-DD
-        dailyCost: 9.0,
-      },
-
-      // --- Notification settings ---
-      settings: {
-        dailyReminders: true,
-        milestoneCelebrations: true,
-        supportMessages: false,
-        communityUpdates: true,
-        quietFrom: '22:00',
-        quietTo: '08:00',
-      },
-
-      // --- Activity & relapse data (from API or mock) ---
-      activityLog: {
-        '2025-03-15': 2,
-        '2025-03-16': 1,
-        '2025-03-17': 0,
-        '2025-03-18': 2,
-        '2025-03-19': 2,
-        '2025-03-20': 2,
-        '2025-03-21': 2,
-        '2025-03-22': 2,
-        '2025-03-23': 2,
-      } as Record<string, number>, // "YYYY-MM-DD": goalsCompleted
-      relapses: ['2025-04-02'] as string[], // ISO dates of relapse after quit
-
-      // --- UI state ---
-      editing: { profile: false },
-      original: null as any,
-      showSaveBar: false,
-      loading: false,
-      error: '',
-    };
-  },
-
-  mounted() {
-    // Allow testing with ?now=2025-09-10
-    const q = new URLSearchParams(location.search);
-    const override = q.get('now');
-    if (override) this.now = new Date(override);
-
-    this.original = this.snapshot();
-    if (this.USE_API) {
-      this.fetchProfile();
-    } else {
-      this.recalcStats();
-    }
-    this.scheduleMidnightTick();
-  },
-
-  beforeUnmount() {
-    if (this.midnightTimer) clearTimeout(this.midnightTimer);
-  },
-
-  watch: {
-    // Recompute stats when inputs change
-    'form.quitDate'() {
-      this.recalcStats();
-      this.updateDirty();
-    },
-    'form.dailyCost'() {
-      this.recalcStats();
-      this.updateDirty();
-    },
-    activityLog: {
-      deep: true,
-      handler() {
-        this.recalcStats();
-        this.updateDirty();
-      },
-    },
-    relapses: {
-      deep: true,
-      handler() {
-        this.recalcStats();
-        this.updateDirty();
-      },
-    },
-
-    // Keep dirty checker
-    form: { deep: true, handler() { this.updateDirty(); } },
-    settings: { deep: true, handler() { this.updateDirty(); } },
-  },
-
-  methods: {
-    // ---------- Midnight tick so "today" updates automatically ----------
-    scheduleMidnightTick() {
-      const t = new Date();
-      const next = new Date(
-        t.getFullYear(),
-        t.getMonth(),
-        t.getDate() + 1,
-        0,
-        0,
-        1,
-      ); // 00:00:01
-      const ms = next.getTime() - t.getTime();
-      this.midnightTimer = setTimeout(() => {
-        this.now = new Date();
-        this.recalcStats();
-        this.scheduleMidnightTick();
-      }, ms);
-    },
-
-    // ---------------- API ----------------
-    async fetchProfile() {
-      try {
-        this.loading = true;
-        this.error = '';
-        const res = await fetch(this.API_URL, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        // Expecting: { form, settings, activityLog, relapses, serverNow? }
-        if (data.form) this.form = data.form;
-        if (data.settings) this.settings = data.settings;
-        if (data.activityLog) this.activityLog = data.activityLog;
-        if (data.relapses) this.relapses = data.relapses;
-        if (data.serverNow) this.now = new Date(data.serverNow);
-
-        this.recalcStats();
-        this.original = this.snapshot();
-        this.updateDirty();
-      } catch (e: any) {
-        this.error = 'Could not load profile. Using demo data.';
-        console.warn(e);
-        this.recalcStats();
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // ---------------- Stats Calculator ----------------
-    /**
-     * Rules:
-     * - daysClean counts days from quitDate..today
-     *   - No relapse on/after quit (earliest relapse cuts window)
-     *   - A day counts only if goalsCompleted >= 1
-     *   - Up to 3 consecutive 0-goal days allowed; 4th breaks the streak (stop)
-     * - badges = floor(daysClean / 7)
-     * - saved  = daysClean * dailyCost
-     */
-    recalcStats() {
-      const quit = this.toDateOnly(this.form.quitDate);
-      const todayRaw = this.toDateOnly(this.now); // may be undefined from helper
-      if (!quit || !todayRaw || quit > todayRaw) {
-        this.stats = { daysClean: 0, badges: 0, saved: 0 };
-        return;
-      }
-      const today: Date = todayRaw;
-
-      // If relapse exists on/after quit, cap at the day before the first relapse
-      const relapseDates = (this.relapses || [])
-        .map((d: string) => this.toDateOnly(d))
-        .filter((d: Date | undefined): d is Date => !!d && d >= quit)
-        .sort((a, b) => +a - +b);
-
-      const end = relapseDates.length ? this.addDays(relapseDates[0], -1) : today;
-
-      let daysClean = 0;
-      let consecutiveZeros = 0;
-
-      for (let d = new Date(quit); d <= end; d = this.addDays(d, 1)) {
-        const key = this.iso(d);
-        const goals = this.activityLog?.[key] ?? 0;
-
-        if (goals >= 1) {
-          consecutiveZeros = 0;
-          daysClean += 1;
-        } else {
-          consecutiveZeros += 1;
-          if (consecutiveZeros > 3) {
-            // streak breaks BEFORE counting this day
-            break;
-          }
-          // Within the grace window (<=3), day does not increment daysClean
-        }
-      }
-
-      const badges = Math.floor(daysClean / 7);
-      const saved = Number((daysClean * (this.form.dailyCost || 0)).toFixed(2));
-      this.stats = { daysClean, badges, saved };
-    },
-
-    // ---------------- Utils ----------------
-    snapshot() {
-      return JSON.parse(
-        JSON.stringify({
-          form: this.form,
-          settings: this.settings,
-          activityLog: this.activityLog,
-          relapses: this.relapses,
-          stats: this.stats,
-        }),
-      );
-    },
-    updateDirty() {
-      const now = this.snapshot();
-      this.showSaveBar = JSON.stringify(now) !== JSON.stringify(this.original);
-    },
-    currency(n: number) {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'AUD',
-      }).format(n);
-    },
-    fmtDate(str: string) {
-      const d = new Date(str);
-      return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    },
-
-    toDateOnly(value: string | Date | undefined) {
-      if (!value) return undefined;
-      const d = new Date(value);
-      if (isNaN(+d)) return undefined;
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate()); // local date-only
-    },
-    iso(d: Date) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    },
-    addDays(d: Date, n: number) {
-      const x = new Date(d);
-      x.setDate(x.getDate() + n);
-      return new Date(x.getFullYear(), x.getMonth(), x.getDate());
-    },
-
-    // ---------------- Avatar edit/upload ----------------
-    onChangeAvatar() {
-      const input = this.$refs.avatarFile as HTMLInputElement | undefined;
-      input?.click();
-    },
-    async onAvatarSelected(e: Event) {
-      const input = e.target as HTMLInputElement;
-      const file = input.files?.[0];
-      if (!file) return;
-
-      // Instant local preview
-      const url = URL.createObjectURL(file);
-      this.form.avatarUrl = url;
-      this.showSaveBar = true;
-
-      // Optional: upload to backend immediately
-      if (this.USE_API) {
-        try {
-          const formData = new FormData();
-          formData.append('avatar', file);
-          const res = await fetch('/api/user/avatar', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-          });
-          if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-          const { avatarUrl } = await res.json();
-          if (avatarUrl) this.form.avatarUrl = avatarUrl;
-        } catch (err) {
-          console.warn(err);
-          alert('Avatar upload failed. Using local preview for now.');
-        }
-      }
-
-      // Clear to allow the same file to be picked again
-      input.value = '';
-    },
-
-    // ---------------- UI actions ----------------
-    onBack() {},
-    onMenu() {},
-    exportData() {
-      alert('Export requested (demo)');
-    },
-    open(which: string) {
-      console.log('open', which);
-    },
-
-    resetAll() {
-      const s = this.original;
-      if (!s) return;
-      this.form = JSON.parse(JSON.stringify(s.form));
-      this.settings = JSON.parse(JSON.stringify(s.settings));
-      this.activityLog = JSON.parse(JSON.stringify(s.activityLog));
-      this.relapses = JSON.parse(JSON.stringify(s.relapses));
-      this.stats = JSON.parse(JSON.stringify(s.stats));
-      this.editing.profile = false;
-      this.updateDirty();
-      this.recalcStats();
-    },
-
-    async saveAll() {
-      if (this.USE_API) {
-        try {
-          const res = await fetch(this.API_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              form: this.form,
-              settings: this.settings,
-              activityLog: this.activityLog,
-              relapses: this.relapses,
-            }),
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        } catch (e) {
-          alert('Failed to save to server. Changes kept locally.');
-          console.warn(e);
-        }
-      }
-      this.original = this.snapshot();
-      this.updateDirty();
-      this.editing.profile = false;
-      alert('Settings saved!');
-    },
-  },
-};
-</script>
-
 <template>
-  <main class="profile-settings">
-    <!-- Background & glow layers -->
-    <div class="bg-layer" aria-hidden="true"></div>
-
-    <!-- Topbar -->
-    <header class="topbar">
-      <button class="icon-btn" aria-label="Back" @click="onBack">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            d="M15 18l-6-6 6-6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+  <main class="profile-page" :class="{ 'reduce-motion': prefersReducedMotion }">
+    <!-- Top App Bar -->
+    <header class="appbar">
+      <button class="icon-btn" aria-label="Go back" @click="onBack">
+        <!-- left arrow -->
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M14 7l-5 5 5 5 1.4-1.4L12.8 12l2.6-2.6L14 7z"/>
         </svg>
       </button>
-      <h1>Profile &amp; Settings</h1>
-      <button class="icon-btn" aria-label="Menu" @click="onMenu">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            d="M3 6h18M3 12h18M3 18h18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-    </header>
 
-    <!-- Loading / Error -->
-    <p v-if="loading" class="muted small" style="padding: 8px 2px">Loading profile...</p>
-    <p v-if="error" class="error small">{{ error }}</p>
+      <h1 class="appbar-title">Profile &amp; Settings</h1>
 
-    <!-- Hero / Profile card -->
-    <section class="hero-card">
-      <div class="avatar-wrap">
-        <img :src="form.avatarUrl" alt="Profile avatar" class="avatar" />
-        <button class="edit-avatar" @click="onChangeAvatar" aria-label="Change avatar">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            <path d="M16.5 3.5l4 4-10 10H6.5v-4z" fill="currentColor" />
+      <div class="menu-wrap" ref="menuWrap">
+        <button
+          class="icon-btn"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen ? 'true' : 'false'"
+          aria-label="Open menu"
+          @click="toggleMenu"
+        >
+          <!-- kebab (three dots) -->
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path fill="currentColor" d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/>
           </svg>
         </button>
 
-        <!-- Hidden file input for avatar -->
-        <input
-          ref="avatarFile"
-          class="sr-only"
-          type="file"
-          accept="image/*"
-          @change="onAvatarSelected"
-        />
+        <ul
+          v-show="menuOpen"
+          class="menu"
+          role="menu"
+          @keydown.escape.stop.prevent="closeMenu"
+        >
+          <li role="menuitem" tabindex="0" @click="onEditFromMenu" @keydown.enter="onEditFromMenu"> {{ editing ? 'Save' : 'Edit Profile' }} </li>
+          <li role="menuitem" tabindex="0" @click="onPrivacy" @keydown.enter="onPrivacy"> Privacy Settings </li>
+          <li role="menuitem" tabindex="0" @click="onAbout" @keydown.enter="onAbout"> About Quitory </li>
+        </ul>
       </div>
-      <div class="identity">
-        <h2>{{ form.fullName }}</h2>
-        <p class="muted">{{ form.email }}</p>
+    </header>
+
+    <!-- Purple Hero Box -->
+    <section class="hero" aria-label="User summary">
+      <img :src="form.avatarUrl" alt="User avatar" class="avatar" />
+      <h2 class="name">{{ form.fullName }}</h2>
+      <p class="email">{{ form.email }}</p>
+      <p class="member">Member since {{ monthYear(memberSince) }}</p>
+    </section>
+
+    <!-- Stats Chips -->
+    <section class="chips" aria-label="Progress stats">
+      <div class="chip chip-blue" role="status" aria-live="polite">
+        <div class="chip-value">{{ stats.daysClean }}</div>
+        <div class="chip-label">Days Clean</div>
       </div>
-      <ul class="stats">
-        <li><strong>{{ stats.daysClean }}</strong><span>Days Clean</span></li>
-        <li><strong>{{ stats.badges }}</strong><span>Badges</span></li>
-        <li><strong>{{ currency(stats.saved) }}</strong><span>Saved</span></li>
-      </ul>
+      <div class="chip chip-green" role="status" aria-live="polite">
+        <div class="chip-value">{{ stats.badges }}</div>
+        <div class="chip-label">Badges</div>
+      </div>
+      <div class="chip chip-purple" role="status" aria-live="polite">
+        <div class="chip-value">{{ currency(stats.saved) }}</div>
+        <div class="chip-label">Saved</div>
+      </div>
     </section>
 
     <!-- Profile Information -->
-    <section class="card">
-      <div class="card-head">
-        <h3>Profile Information</h3>
-        <button class="link" @click="editing.profile = !editing.profile">
-          {{ editing.profile ? 'Done' : 'Edit' }}
+    <section class="card" aria-labelledby="profile-info-heading">
+      <header class="card-head">
+        <h3 id="profile-info-heading">Profile Information</h3>
+        <button class="link" @click="onEdit" :aria-pressed="editing">
+          {{ editing ? "Save" : "Edit" }}
         </button>
-      </div>
+      </header>
 
-      <div class="form-grid">
-        <div class="row">
-          <label class="row-label">Full Name</label>
-          <div class="row-value">
-            <template v-if="!editing.profile">{{ form.fullName }}</template>
-            <input v-else v-model.trim="form.fullName" type="text" autocomplete="name" />
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="row-label">Email</label>
-          <div class="row-value">
-            <template v-if="!editing.profile">{{ form.email }}</template>
-            <input v-else v-model.trim="form.email" type="email" autocomplete="email" />
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="row-label">Quit Date</label>
-          <div class="row-value">
-            <template v-if="!editing.profile">{{ fmtDate(form.quitDate) }}</template>
-            <input v-else v-model="form.quitDate" type="date" />
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="row-label">Daily Cost</label>
-          <div class="row-value">
-            <template v-if="!editing.profile">{{ currency(form.dailyCost) }}</template>
-            <div v-else class="input-with-prefix">
-              <span class="prefix">$</span>
-              <input
-                v-model.number="form.dailyCost"
-                type="number"
-                min="0"
-                step="0.05"
-                inputmode="decimal"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ul class="rows">
+        <li class="row">
+          <span class="label">Full Name</span>
+          <span v-if="!editing" class="value">{{ form.fullName }}</span>
+          <input
+            v-else
+            v-model="form.fullName"
+            inputmode="text"
+            autocomplete="name"
+            aria-label="Full name"
+          />
+        </li>
+        <li class="row">
+          <span class="label">Email</span>
+          <span v-if="!editing" class="value">{{ form.email }}</span>
+          <input
+            v-else
+            v-model="form.email"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            aria-label="Email"
+          />
+        </li>
+        <li class="row">
+          <span class="label">Quit Date</span>
+          <span v-if="!editing" class="value">
+            {{ new Date(form.quitDate + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }) }}
+          </span>
+          <input
+            v-else
+            v-model="form.quitDate"
+            type="date"
+            @change="recalcStats"
+            aria-label="Quit date"
+          />
+        </li>
+        <li class="row">
+          <span class="label">Daily Cost</span>
+          <span v-if="!editing" class="value">{{ currency(form.dailyCost) }}</span>
+          <input
+            v-else
+            v-model.number="form.dailyCost"
+            type="number"
+            min="0"
+            step="0.5"
+            inputmode="decimal"
+            @change="recalcStats"
+            aria-label="Daily cost"
+          />
+        </li>
+      </ul>
     </section>
 
     <!-- Notifications -->
-    <section class="card">
-      <h3 class="card-title">Notifications</h3>
-      <ul class="setting-list">
-        <li class="setting">
-          <div class="setting-text">
-            <span class="setting-title">Daily Reminders</span>
-            <p class="muted small">Gentle nudges to achieve your daily goals</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" v-model="settings.dailyReminders" />
-            <span class="slider" aria-hidden="true"></span>
-          </label>
-        </li>
-        <li class="setting">
-          <div class="setting-text">
-            <span class="setting-title">Milestone Celebrations</span>
-            <p class="muted small">Celebrate 1-day, 1-week, 1-month milestones</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" v-model="settings.milestoneCelebrations" />
-            <span class="slider" aria-hidden="true"></span>
-          </label>
-        </li>
-        <li class="setting">
-          <div class="setting-text">
-            <span class="setting-title">Support Messages</span>
-            <p class="muted small">Occasional support tips from Quitory</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" v-model="settings.supportMessages" />
-            <span class="slider" aria-hidden="true"></span>
-          </label>
-        </li>
-        <li class="setting">
-          <div class="setting-text">
-            <span class="setting-title">Community Updates</span>
-            <p class="muted small">Monthly highlights from support groups</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" v-model="settings.communityUpdates" />
-            <span class="slider" aria-hidden="true"></span>
-          </label>
-        </li>
-      </ul>
+    <section class="card" aria-labelledby="notifications-heading">
+      <header class="card-head">
+        <h3 id="notifications-heading">Notifications</h3>
+      </header>
 
-      <div class="quiet-hours">
-        <div class="qh-row">
-          <div class="qh-label">
-            <h4>Quiet Hours</h4>
-            <p class="muted">Pause notifications during these hours</p>
+      <div class="switch-row">
+        <div class="switch-text">
+          <div class="title">Daily Reminders</div>
+          <div class="subtitle">Get reminded about your daily goals</div>
+        </div>
+        <label class="switch" :aria-checked="settings.dailyReminders" role="switch" tabindex="0" @keydown.enter.prevent="toggle('dailyReminders')" @keydown.space.prevent="toggle('dailyReminders')">
+          <input type="checkbox" v-model="settings.dailyReminders" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-text">
+          <div class="title">Milestone Celebrations</div>
+          <div class="subtitle">Celebrate your achievements</div>
+        </div>
+        <label class="switch" :aria-checked="settings.milestoneCelebrations" role="switch" tabindex="0" @keydown.enter.prevent="toggle('milestoneCelebrations')" @keydown.space.prevent="toggle('milestoneCelebrations')">
+          <input type="checkbox" v-model="settings.milestoneCelebrations" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-text">
+          <div class="title">Support Messages</div>
+          <div class="subtitle">Motivational messages and tips</div>
+        </div>
+        <label class="switch" :aria-checked="settings.supportMessages" role="switch" tabindex="0" @keydown.enter.prevent="toggle('supportMessages')" @keydown.space.prevent="toggle('supportMessages')">
+          <input type="checkbox" v-model="settings.supportMessages" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-text">
+          <div class="title">Community Updates</div>
+          <div class="subtitle">Updates from peer support groups</div>
+        </div>
+        <label class="switch" :aria-checked="settings.communityUpdates" role="switch" tabindex="0" @keydown.enter.prevent="toggle('communityUpdates')" @keydown.space.prevent="toggle('communityUpdates')">
+          <input type="checkbox" v-model="settings.communityUpdates" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="quiet">
+        <div class="quiet-title">Quiet Hours</div>
+        <div class="quiet-grid">
+          <div>
+            <label class="quiet-label">From</label>
+            <input class="quiet-time" type="time" v-model="settings.quietFrom" />
           </div>
-          <div class="qh-inputs">
-            <label class="qh-field">From
-              <input type="time" v-model="settings.quietFrom" />
-            </label>
-            <label class="qh-field">To
-              <input type="time" v-model="settings.quietTo" />
-            </label>
+          <div>
+            <label class="quiet-label">To</label>
+            <input class="quiet-time" type="time" v-model="settings.quietTo" />
           </div>
         </div>
       </div>
     </section>
 
     <!-- Account -->
-    <section class="card">
-      <h3 class="card-title">Account</h3>
-      <ul class="nav-list">
-        <li>
-          <button class="nav-item" @click="open('privacy')">
-            <span>Privacy Settings</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+    <section class="card" aria-labelledby="account-heading">
+      <header class="card-head">
+        <h3 id="account-heading">Account</h3>
+      </header>
+
+      <ul class="list">
+        <li class="list-item" role="button" tabindex="0" @click="onPrivacy" @keydown.enter="onPrivacy" @keydown.space.prevent="onPrivacy">
+          <span class="left">
+            <span class="icon-pill icon-blue" aria-hidden="true">
+              <!-- shield -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M12 2l7 3v6c0 5-3.4 9.4-7 10-3.6-.6-7-5-7-10V5l7-3z"/>
+              </svg>
+            </span>
+            <span class="title">Privacy Settings</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item" @click="exportData">
-            <span>Export Data</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item" role="button" tabindex="0" @click="onExport" @keydown.enter="onExport" @keydown.space.prevent="onExport">
+          <span class="left">
+            <span class="icon-pill icon-green" aria-hidden="true">
+              <!-- download -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M5 20h14v-2H5v2zM11 4h2v7h3l-4 4-4-4h3V4z"/>
+              </svg>
+            </span>
+            <span class="title">Export Data</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item" @click="open('backup')">
-            <span>Backup &amp; Sync</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item" role="button" tabindex="0" @click="onBackup" @keydown.enter="onBackup" @keydown.space.prevent="onBackup">
+          <span class="left">
+            <span class="icon-pill icon-purple" aria-hidden="true">
+              <!-- sync -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M12 6V3L8 7l4 4V8c2.8 0 5 2.2 5 5 0 .7-.1 1.3-.4 1.9l1.8 1.1C18.8 15 19 14 19 13c0-3.9-3.1-7-7-7zm-5 6c0-.7.1-1.3.4-1.9L5.6 9C5.2 10 5 11 5 12c0 3.9 3.1 7 7 7v3l4-4-4-4v3c-2.8 0-5-2.2-5-5z"/>
+              </svg>
+            </span>
+            <span class="title">Backup &amp; Sync</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item danger" @click="open('delete')">
-            <span>Delete Account</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item danger-tile" role="button" tabindex="0" @click="onDelete" @keydown.enter="onDelete" @keydown.space.prevent="onDelete">
+          <span class="left">
+            <span class="icon-pill icon-red" aria-hidden="true">
+              <!-- trash -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 8h2v7h-2v-7zm4 0h2v7h-2v-7zM8 11h2v7H8v-7z"/>
+              </svg>
+            </span>
+            <span class="title">Delete Account</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
       </ul>
     </section>
 
     <!-- Help & Support -->
-    <section class="card">
-      <h3 class="card-title">Help &amp; Support</h3>
-      <ul class="nav-list">
-        <li>
-          <button class="nav-item" @click="open('faq')">
-            <span>FAQ</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+    <section class="card" aria-labelledby="help-heading">
+      <header class="card-head">
+        <h3 id="help-heading">Help &amp; Support</h3>
+      </header>
+
+      <ul class="list">
+        <li class="list-item" role="button" tabindex="0" @click="onFAQ" @keydown.enter="onFAQ" @keydown.space.prevent="onFAQ">
+          <span class="left">
+            <span class="icon-pill icon-orange" aria-hidden="true">
+              <!-- Question mark -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M11 18h2v-2h-2v2zm1-16C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm-1-4h2v-2h-2v2zm1-10c-1.7 0-3 1.3-3 3h2c0-.6.4-1 1-1s1 .4 1 1-.4 1-1 1c-1.1 0-2 .9-2 2h2c0-.6.4-1 1-1s1 .4 1 1-.4 1-1 1h-1v2h2v-1c1.1 0 2-.9 2-2s-.9-2-2-2c.6 0 1-.4 1-1s-.4-1-1-1z"/>
+              </svg>
+            </span>
+            <span class="title">FAQ</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item" @click="open('support')">
-            <span>Contact Support</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item" role="button" tabindex="0" @click="onContactSupport" @keydown.enter="onContactSupport" @keydown.space.prevent="onContactSupport">
+          <span class="left">
+            <span class="icon-pill icon-blue" aria-hidden="true">
+              <!-- Support icon -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12v5c0 1.1.9 2 2 2h3v-7H4v-1c0-4.4 3.6-8 8-8s8 3.6 8 8v1h-3v7h3c1.1 0 2-.9 2-2v-5c0-5.5-4.5-10-10-10z"/>
+              </svg>
+            </span>
+            <span class="title">Contact Support</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item" @click="open('rate')">
-            <span>Rate App</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item" role="button" tabindex="0" @click="onRateApp" @keydown.enter="onRateApp" @keydown.space.prevent="onRateApp">
+          <span class="left">
+            <span class="icon-pill icon-gold" aria-hidden="true">
+              <!-- Star icon -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M12 17.3l6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7l-7.1.6 5.4 4.7-1.6 7z"/>
+              </svg>
+            </span>
+            <span class="title">Rate App</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
-        <li>
-          <button class="nav-item" @click="open('about')">
-            <span>About Quitory</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+
+        <li class="list-item" role="button" tabindex="0" @click="onAbout" @keydown.enter="onAbout" @keydown.space.prevent="onAbout">
+          <span class="left">
+            <span class="icon-pill icon-grey" aria-hidden="true">
+              <!-- Info icon -->
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
+              </svg>
+            </span>
+            <span class="title">About Quitory</span>
+          </span>
+          <span class="chevron" aria-hidden="true"></span>
         </li>
       </ul>
     </section>
-
-    <!-- Save bar -->
-    <footer class="save-bar" v-if="showSaveBar">
-      <button class="btn ghost" @click="resetAll">Discard</button>
-      <button class="btn primary" @click="saveAll">Save Changes</button>
-    </footer>
   </main>
 </template>
 
+<script lang="ts">
+import { onMounted, onBeforeUnmount } from "vue";
+
+export default {
+  name: "ProfileView",
+  data() {
+    return {
+      // ---- Profile data ----
+      form: {
+        fullName: "Alex Johnson",
+        email: "alex.johnson@email.com",
+        avatarUrl: "https://i.pravatar.cc/160?img=13",
+        quitDate: "2025-03-15",
+        dailyCost: 8.0,
+      },
+      memberSince: "2024-03-01",
+
+      // ---- Stats ----
+      stats: { daysClean: 0, badges: 0, saved: 0 },
+
+      // ---- UI state ----
+      editing: false,
+
+      // ---- Notifications settings ----
+      settings: {
+        dailyReminders: true,
+        milestoneCelebrations: true,
+        supportMessages: false,
+        communityUpdates: true,
+        quietFrom: "22:00",
+        quietTo: "08:00",
+      },
+
+      // App bar menu
+      menuOpen: false as boolean,
+
+      // Platform polish
+      prefersReducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+      midnightTimer: 0 as any,
+    };
+  },
+  created() {
+    this.recalcStats();
+    this.scheduleMidnightTick();
+    try {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener?.("change", this.onReducedMotionChange);
+    } catch {}
+  },
+  mounted() {
+    // Click outside to close menu
+    document.addEventListener("click", this.onDocClick, { capture: true });
+  },
+  beforeUnmount() {
+    clearTimeout(this.midnightTimer);
+    try {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.removeEventListener?.("change", this.onReducedMotionChange);
+    } catch {}
+    document.removeEventListener("click", this.onDocClick, { capture: true } as any);
+  },
+  watch: {
+    "form.quitDate"() { this.recalcStats(); },
+    "form.dailyCost"() { this.recalcStats(); },
+  },
+  methods: {
+    // Formatting helpers
+    currency(n: number) {
+      return new Intl.NumberFormat(undefined, { style: "currency", currency: "AUD" }).format(n ?? 0);
+    },
+    monthYear(d: string) {
+      const dt = new Date(d + "T00:00:00");
+      return new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(dt);
+    },
+
+    // Core stats
+    recalcStats() {
+      const quit = new Date(this.form.quitDate + "T00:00:00");
+      const today = new Date();
+      const days = Math.max(0, Math.floor((today.getTime() - quit.getTime()) / 86400000));
+      const badges = (days > 0 ? 1 : 0) + Math.floor(days / 7);
+      const saved = days * (this.form.dailyCost || 0);
+      this.stats = { daysClean: days, badges, saved };
+    },
+
+    // Edit toggle
+    onEdit() {
+      this.editing = !this.editing;
+      if (!this.editing) this.recalcStats();
+    },
+    onEditFromMenu() {
+      this.onEdit();
+      this.closeMenu();
+    },
+
+    // Switch keyboard toggle
+    toggle(key: "dailyReminders" | "milestoneCelebrations" | "supportMessages" | "communityUpdates") {
+      this.settings[key] = !this.settings[key];
+    },
+
+    // App bar actions
+    onBack() {
+      // If router present:
+      // this.$router?.back?.();
+      history.length > 1 ? history.back() : (window.location.href = "/");
+    },
+    toggleMenu(e: MouseEvent) {
+      e.stopPropagation();
+      this.menuOpen = !this.menuOpen;
+    },
+    closeMenu() { this.menuOpen = false; },
+    onDocClick() { if (this.menuOpen) this.closeMenu(); },
+
+    // Account actions (stubbed)
+    onPrivacy() { alert("Open Privacy Settings"); this.closeMenu(); },
+    onExport() { alert("Exporting your data..."); },
+    onBackup() { alert("Open Backup & Sync"); },
+    onDelete() {
+      if (confirm("Delete your account? This cannot be undone.")) {
+        alert("Account deletion requested.");
+      }
+    },
+
+    // Help & Support
+    onFAQ() { alert("Open FAQ"); },
+    onContactSupport() {
+      window.location.href = "mailto:support@quitory.app?subject=Support%20Request";
+    },
+    onRateApp() { window.open("https://quitory.app/rate", "_blank"); },
+    onAbout() { alert("Quitory - helping you stay vape free."); },
+
+    // Midnight tick so stats keep fresh
+    scheduleMidnightTick() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(24, 0, 0, 0);
+      const ms = next.getTime() - now.getTime();
+      this.midnightTimer = window.setTimeout(() => {
+        this.recalcStats();
+        this.scheduleMidnightTick();
+      }, Math.max(1000, ms));
+    },
+
+    onReducedMotionChange(e: MediaQueryListEvent) {
+      this.prefersReducedMotion = e.matches;
+    },
+  },
+};
+</script>
+
 <style scoped>
-:root {
-  --bg: #0b0f14;
-  --card: #0f1520;
-  --muted: #a0a8b4;
-  --text: #e8eef8;
-  --brandA: #3b82f6;
-  --brandB: #22c55e;
-  --accent: #9c5eff;
-  --danger: #ff6b6b;
-  --ring: #93c5fd;
-}
-
-/* Utility for visually hidden inputs */
-.sr-only {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.profile-settings {
-  position: relative;
-  min-height: 100vh;
-  padding: 12px;
+/* Base layout with iOS safe areas and better tap targets */
+.profile-page {
+  max-width: 480px;
   margin: 0 auto;
-  color: var(--text);
-  max-width: 720px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px calc(28px + env(safe-area-inset-bottom));
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f4f7fb;
+  color: #0f172a;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  touch-action: manipulation;
 }
 
-/* Background with glow blobs */
-.bg-layer {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(1200px 800px at 10% 10%, rgba(63, 94, 251, 0.16), transparent 60%),
-    radial-gradient(1200px 800px at 90% 20%, rgba(139, 92, 246, 0.14), transparent 55%),
-    linear-gradient(180deg, #0b0f14 0%, #0e1522 60%, #0b0f14 100%);
-}
-
-.bg-layer::before,
-.bg-layer::after {
-  content: '';
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  filter: blur(80px);
-  opacity: 0.25;
-  border-radius: 999px;
-  animation: floaty 18s ease-in-out infinite alternate;
-}
-
-.bg-layer::before {
-  left: -120px;
-  bottom: -90px;
-  background: radial-gradient(circle at 30% 30%, #3b82f6, transparent 60%);
-}
-
-.bg-layer::after {
-  right: -140px;
-  top: -100px;
-  background: radial-gradient(circle at 60% 40%, #9c5eff, transparent 60%);
-  animation-delay: 3s;
-}
-
-@keyframes floaty {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(40px, -20px, 0) scale(1.05); }
-}
-
-/* Topbar */
-.topbar {
+/* Top App Bar */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffffcc;
+  backdrop-filter: saturate(1.2) blur(8px);
   display: grid;
   grid-template-columns: 40px 1fr 40px;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(6, 9, 15, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  backdrop-filter: blur(6px);
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1px solid #e5e9f2;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 24px rgba(2,6,23,0.06);
 }
-.topbar h1 {
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-}
+
 .icon-btn {
   display: inline-grid;
   place-items: center;
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* Hero */
-.hero-card {
-  position: relative;
-  margin: 12px 0;
-  padding: 24px 16px 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--brandA), var(--accent));
-  color: #fff;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35), 0 8px 28px rgba(110, 83, 255, 0.25);
-}
-.avatar-wrap {
-  position: absolute;
-  top: -24px;
-  left: 16px;
-}
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-  object-fit: cover;
-}
-.edit-avatar {
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #10141a;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  display: grid;
-  place-items: center;
+  border: 1px solid #e5e9f2;
+  background: #fff;
   cursor: pointer;
 }
-.identity {
-  padding-left: 88px;
-}
-.identity h2 {
-  margin: 0;
-  font-size: 20px;
+.icon-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+
+.appbar-title {
+  font-size: 16px;
   font-weight: 800;
-}
-.muted {
-  color: var(--muted);
-}
-.small {
-  font-size: 12px;
-}
-.stats {
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.stats li {
-  display: grid;
-  place-items: center;
-  padding: 10px 6px;
-  background: rgba(10, 12, 20, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
-  text-align: center;
-  backdrop-filter: blur(4px);
-  color: #f6f8ff;
-}
-.stats strong {
-  font-size: 18px;
-  display: block;
-}
-.stats span {
-  font-size: 12px;
-  opacity: 0.95;
+  margin: 0;
+  text-align: left;
+  color: #111827;
 }
 
-/* Card */
-.card {
-  background: rgba(15, 21, 32, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 14px;
-  margin: 12px 0;
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(6px);
+/* Kebab menu */
+.menu-wrap { position: relative; justify-self: end; }
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e5e9f2;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(2,6,23,0.12);
+  padding: 6px;
+  list-style: none;
+  margin: 0;
 }
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.card-title {
-  margin: 0 0 8px;
+.menu li {
+  padding: 10px 12px;
+  border-radius: 8px;
   font-size: 14px;
-  font-weight: 700;
-}
-.link {
-  color: #a9b7ff;
-  font-weight: 700;
-  background: transparent;
-  border: 0;
+  font-weight: 600;
+  color: #0f172a;
   cursor: pointer;
 }
-
-/* Form grid */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-.row {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 12px;
-  align-items: center;
-}
-.row-label {
-  color: var(--muted);
-  font-size: 12px;
-}
-.row-value input {
-  width: 100%;
-  padding: 10px 12px;
-  background: #0b111a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: var(--text);
+.menu li:hover, .menu li:focus-visible {
+  background: #f3f4f6;
   outline: none;
 }
-.row-value input:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.15);
-}
-.input-with-prefix {
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  align-items: center;
-}
-.input-with-prefix .prefix {
+
+/* Purple hero */
+.hero {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
   text-align: center;
-  color: var(--muted);
+  padding: 60px 16px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+.avatar {
+  width: 88px; height: 88px; border-radius: 50%;
+  border: 3px solid #fff; object-fit: cover; margin-bottom: 10px;
+}
+.name { font-size: 20px; font-weight: 800; margin: 4px 0 2px; }
+.email { font-size: 13px; opacity: .95; margin: 0; word-break: break-all; }
+.member { font-size: 12px; opacity: .9; margin: 2px 0 0; }
+
+/* Chips */
+.chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0 14px; }
+.chip {
+  border-radius: 12px; text-align: center; padding: 12px 6px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06); border: 1px solid #e5e9f2;
+  font-weight: 800;
+  min-height: 64px;
+}
+.chip-value { font-size: 18px; line-height: 1; }
+.chip-label { font-size: 11px; font-weight: 600; opacity: .75; margin-top: 6px; }
+.chip-blue   { background: #dbeafe; color: #1e3a8a; }
+.chip-green  { background: #dcfce7; color: #166534; }
+.chip-purple { background: #ede9fe; color: #4c1d95; }
+
+/* Cards */
+.card {
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06); border: 1px solid #e5e9f2;
+  margin-top: 8px; padding-bottom: 8px;
+}
+.card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px 8px;
+}
+.card-head h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.link {
+  background: none; border: none; color: #3b82f6; font-weight: 700; cursor: pointer;
+  padding: 8px 10px; border-radius: 10px;
+}
+.link:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+
+/* Profile info rows */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 12px 16px; border-top: 1px solid #e5e9f2; align-items: center;
+}
+.row:first-child { border-top: none; }
+.label { color: #6b7280; font-size: 14px; }
+.value { font-size: 14px; font-weight: 700; color: #0f172a; }
+input {
+  border: 1px solid #e5e9f2; border-radius: 10px; padding: 10px 12px; font-size: 16px; color: #0f172a;
+  background: #fff; width: min(240px, 60vw);
 }
 
-/* Toggles */
-.setting-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 10px;
+/* Notifications (iOS-style switches) */
+.switch-row {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  gap: 12px; padding: 12px 16px; border-top: 1px solid #e5e9f2;
 }
-.setting {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px;
-  background: #0b111a;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  transition: transform 0.15s ease, background 0.2s ease;
-}
-.setting:hover {
-  transform: translateY(-1px);
-  background: rgba(16, 24, 38, 0.85);
-}
-.setting-title {
-  font-weight: 700;
-}
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 28px;
-}
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+.switch-text .title { font-size: 14px; font-weight: 700; color: #0f172a; }
+.switch-text .subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+/* Toggle */
+.switch { position: relative; width: 50px; height: 30px; display: inline-block; }
+.switch input { display: none; }
 .slider {
-  position: absolute;
-  inset: 0;
-  background: #2a3240;
-  border-radius: 999px;
-  transition: background 0.2s;
+  position: absolute; inset: 0; background: #e5e7eb; border-radius: 999px; transition: all .2s ease;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
 }
-.slider::before {
-  content: '';
-  position: absolute;
-  height: 22px;
-  width: 22px;
-  left: 3px;
-  top: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.2s;
+.slider:before {
+  content: ""; position: absolute; height: 24px; width: 24px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: all .2s ease; box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
-.switch input:checked + .slider {
-  background: linear-gradient(135deg, var(--brandA), var(--accent));
-}
-.switch input:checked + .slider::before {
-  transform: translateX(20px);
-}
+.switch input:checked + .slider { background: #3b82f6; }
+.switch input:checked + .slider:before { transform: translateX(20px); }
 
 /* Quiet hours */
-.quiet-hours {
-  margin-top: 12px;
+.quiet { padding: 8px 16px 12px; border-top: 1px solid #e5e9f2; }
+.quiet-title { font-weight: 800; margin: 8px 0 10px; }
+.quiet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quiet-label { display: block; font-size: 12px; color: #6b7280; margin: 0 0 6px 2px; }
+.quiet-time {
+  width: 100%; border: 1px solid #e5e9f2; background: #fff; color: #0f172a;
+  border-radius: 10px; padding: 10px 12px; font-size: 16px;
 }
-.qh-row {
+
+/* Account list tiles */
+.list {
+  list-style: none;
+  margin: 4px 8px 12px;
+  padding: 0;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-}
-.qh-inputs {
-  display: flex;
   gap: 10px;
 }
-.qh-field {
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.qh-field input {
-  padding: 8px 10px;
-  background: #0b111a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #f5f9ff;
-}
-
-/* Nav list */
-.nav-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-}
-.nav-item {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  text-align: left;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #0b111a;
-  color: var(--text);
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease;
-}
-.nav-item + li,
-.nav-list li + li {
-  margin-top: 8px;
-}
-.nav-item:hover {
-  background: #0d1522;
-  transform: translateY(-1px);
-}
-.nav-item.danger {
-  color: var(--danger);
-  border-color: rgba(255, 107, 107, 0.35);
-}
-
-/* Save bar */
-.save-bar {
-  position: sticky;
-  bottom: 0;
+.list-item {
   display: flex;
-  gap: 8px;
-  justify-content: center;
-  padding: 12px;
-  margin-top: 8px;
-  background: rgba(6, 9, 15, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 14px;
   border-radius: 12px;
-  backdrop-filter: blur(6px);
+  border: 1px solid #e5e9f2;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+  cursor: pointer;
+  width: 100%;
 }
-.btn {
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.list-item:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.left { display: inline-flex; align-items: center; gap: 10px; }
+.title { font-size: 14px; font-weight: 700; color: #0f172a; }
+
+/* Right chevron */
+.chevron {
+  flex: 0 0 auto;
+  width: 18px;
+  text-align: right;
+  color: #9aa4b2;
 }
-.btn.primary {
-  color: #0b0f14;
-  background: linear-gradient(135deg, var(--brandA), var(--accent));
-  border: 0;
+.chevron::before { content: ">"; font-size: 18px; line-height: 1; }
+
+/* Icon pills */
+.icon-pill {
+  width: 32px; height: 32px; border-radius: 999px;
+  display: grid; place-items: center;
+  background: #eef2f7; color: #334155;
 }
-.btn.ghost {
-  background: transparent;
-  color: var(--text);
+.icon-blue   { background: #e0ecff; color: #1e40af; }
+.icon-green  { background: #dcfce7; color: #166534; }
+.icon-purple { background: #ede9fe; color: #4c1d95; }
+.icon-red    { background: #fee2e2; color: #b91c1c; }
+.icon-orange { background: #fde68a; color: #92400e; }
+.icon-gold   { background: #fef3c7; color: #b45309; }
+.icon-grey   { background: #e5e7eb; color: #374151; }
+
+/* Danger tile */
+.danger-tile {
+  border-color: #fecaca;
+  background: #fff5f5;
+  color: #b91c1c;
+}
+.danger-tile .title   { color: #b91c1c; }
+.danger-tile .chevron { color: #ef4444; }
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .profile-page { background: #0b0f14; color: #e5e7eb; }
+  .appbar { background: #0b0f14e6; border-color: #1f2937; }
+  .icon-btn { background: #111827; border-color: #1f2937; }
+  .appbar-title { color: #e5e7eb; }
+
+  .card { background: #111827; border-color: #1f2937; }
+  .row, .switch-row, .quiet { border-color: #1f2937; }
+  .label, .switch-text .subtitle { color: #9ca3af; }
+  .value, .switch-text .title { color: #e5e7eb; }
+  input, .quiet-time { background: #0f1622; border-color: #1f2937; color: #e5e7eb; }
+  .chip { border-color: #1f2937; }
+
+  .list-item {
+    background: #111827;
+    border-color: #1f2937;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  .title { color: #e5e7eb; }
+  .chevron { color: #9ca3af; }
+  .danger-tile {
+    background: #2a1111;
+    border-color: #5b1a1a;
+    color: #fca5a5;
+  }
+  .danger-tile .title { color: #fca5a5; }
+  .danger-tile .chevron { color: #f87171; }
 }
 
-/* Responsive */
-@media (min-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .row {
-    grid-template-columns: 160px 1fr;
-  }
-}
-
-.error {
-  color: #ffb4b4;
+/* Reduced motion: tame transitions for accessibility */
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
 }
 </style>
