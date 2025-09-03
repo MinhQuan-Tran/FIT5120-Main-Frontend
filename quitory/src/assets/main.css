@@ -1,22 +1,28 @@
 :root {
-  --bg: #f9fafb;
+  --bg: #ececec;
   --text: #0f172a;
   --radius: 16px;
 
-  --shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.08);
+  --shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.1);
 }
 
 body {
   padding-top: env(safe-area-inset-top, 24px);
-
   font-family: 'Roboto', sans-serif;
-  margin: 0;
+  margin: 12px;
   padding: 0;
   box-sizing: border-box;
   background-color: var(--bg);
   color: var(--text);
   border-color: var(--border);
   min-height: 100dvh;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 }
 
 section {

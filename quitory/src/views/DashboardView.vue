@@ -59,8 +59,10 @@
     <!-- Goals -->
     <section class="goals" aria-labelledby="goals-title">
       <div class="goals-header">
-        <h5 id="goals-title" class="section-title">Today's Goals</h5>
+        <b id="goals-title" class="section-title">Today's Goals</b>
       </div>
+
+      <br />
 
       <div class="goals-list">
         <!-- Completed -->
@@ -95,16 +97,6 @@
 </template>
 
 <style scoped>
-  .dashboard {
-    padding: 12px;
-    margin: 0 auto;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
   /* -------- Banner -------- */
   .banner {
     position: relative;
