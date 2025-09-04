@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
 
+import useAuthStore from '@/stores/authStore';
+import { AuthStatus } from '@/types/user';
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -13,6 +16,9 @@ const router = createRouter({
       path: '/progress',
       name: 'Progress',
       component: () => import('@/views/ProgressView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
     },
     // {
     //   path: '/peer-support',
@@ -28,6 +34,22 @@ const router = createRouter({
     //   component: () => import('@/views/AboutView.vue'),
     // },
   ],
+});
+
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const authStore = useAuthStore();
+    if (authStore.status === AuthStatus.Unauthenticated) {
+      try {
+        await authStore.login();
+      } catch (error) {
+        console.error('Login failed:', error);
+        return next({ name: 'Home' });
+      }
+    }
+  }
+
+  return next();
 });
 
 export default router;

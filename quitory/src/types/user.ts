@@ -1,6 +1,10 @@
-export default interface User {
-  id: string;
-  displayName: string;
-  email: string;
-  photoURL?: string;
+export interface User {
+  name: string;
+  profilePictureURL?: string;
+}
+
+export enum AuthStatus {
+  Authenticated = 'authenticated',
+  Unauthenticated = 'unauthenticated',
+  Loading = 'loading',
 }
