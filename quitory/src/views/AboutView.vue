@@ -1,6 +1,50 @@
 <!-- src/views/AboutView.vue -->
 <template>
   <main class="about-page" :class="{ 'reduce-motion': prefersReducedMotion }">
+    <!-- TOP APP BAR -->
+    <header class="appbar">
+      <button class="icon-btn" aria-label="Go back" @click="onBack">
+        <!-- left arrow -->
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M14 7l-5 5 5 5 1.4-1.4L12.8 12l2.6-2.6L14 7z"/>
+        </svg>
+      </button>
+
+      <h1 class="appbar-title">About Quitory</h1>
+
+      <div class="menu-wrap" ref="menuWrap">
+        <button
+          class="icon-btn"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen ? 'true' : 'false'"
+          aria-label="Open menu"
+          @click="toggleMenu"
+        >
+          <!-- hamburger -->
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path fill="currentColor" d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/>
+          </svg>
+        </button>
+
+        <ul
+          v-show="menuOpen"
+          class="menu"
+          role="menu"
+          @keydown.escape.stop.prevent="closeMenu"
+        >
+          <li role="menuitem" tabindex="0" @click="goHome" @keydown.enter="goHome">
+            Home
+          </li>
+          <li role="menuitem" tabindex="0" @click="onPrivacy" @keydown.enter="onPrivacy">
+            Privacy
+          </li>
+          <li role="menuitem" tabindex="0" @click="onContactSupport" @keydown.enter="onContactSupport">
+            Contact Support
+          </li>
+        </ul>
+      </div>
+    </header>
+
     <!-- HERO -->
     <section class="hero" :style="heroStyle" role="banner">
       <div class="hero-overlay" aria-hidden="true"></div>
@@ -248,6 +292,9 @@ export default defineComponent({
   name: 'AboutView',
   data() {
     return {
+      // App bar
+      menuOpen: false as boolean,
+
       heroBgUrl:
         'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDd4ZGJxYnQ0Z2NpMjd6MGxvMjVkc2R1OGluN3lpZW1uY2NkdzJtNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6MbeStoPrvZSvdfy/giphy.gif',
       prefersReducedMotion: false,
@@ -317,7 +364,7 @@ export default defineComponent({
         { name: 'Lina',  src: 'https://randomuser.me/api/portraits/women/12.jpg', active: false }
       ],
       testimonials: [
-        { name: 'Alex',  days: 30, src: 'https://randomuser.me/api/portraits/men/11.jpg',  quote: 'Day 30 vape-free! Quitory helped me save over $200 already ' },
+        { name: 'Alex',  days: 30, src: 'https://randomuser.me/api/portraits/men/11.jpg',  quote: 'Day 30 vape-free! Quitory helped me save over $200 already' },
         { name: 'Sarah', days: 15, src: 'https://randomuser.me/api/portraits/women/44.jpg', quote: 'The daily reminders keep me motivated. Best decision ever!' }
       ],
       ctaPoints: ['Free to start', 'No judgment', '24/7 support']
@@ -332,6 +379,10 @@ export default defineComponent({
     }
   },
   mounted() {
+    // Outside-click to close menu
+    document.addEventListener('click', this.onDocClick, { capture: true });
+
+    // Reduced motion watcher
     try {
       const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.prefersReducedMotion = mq.matches;
@@ -340,7 +391,28 @@ export default defineComponent({
       mq.addEventListener ? mq.addEventListener('change', listener) : mq.addListener(listener);
     } catch {}
   },
+  beforeUnmount() {
+    document.removeEventListener('click', this.onDocClick as any, { capture: true } as any);
+  },
   methods: {
+    // App bar
+    onBack() {
+      history.length > 1 ? history.back() : (window.location.href = '/');
+    },
+    toggleMenu(e: MouseEvent) {
+      e.stopPropagation();
+      this.menuOpen = !this.menuOpen;
+    },
+    closeMenu() { this.menuOpen = false; },
+    onDocClick() { if (this.menuOpen) this.closeMenu(); },
+    goHome() { window.location.href = '/'; this.closeMenu(); },
+    onPrivacy() { alert('Open Privacy Policy'); this.closeMenu(); },
+    onContactSupport() {
+      window.location.href = 'mailto:support@quitory.app?subject=Support%20Request';
+      this.closeMenu();
+    },
+
+    // Interactions
     setActive(i: number) { this.activePill = i; },
     clearActive() { this.activePill = -1; },
     goSignup() {
@@ -354,7 +426,66 @@ export default defineComponent({
 :root { --hero-min-h: 56vh; }
 .about-page { display: block; color: #1a1a1a; background: #fff; }
 
-/* HERO */
+/* ------- TOP APP BAR ------- */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffffcc;
+  backdrop-filter: saturate(1.2) blur(8px);
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1px solid #e5e9f2;
+  margin: 8px 12px 10px;
+  box-shadow: 0 6px 24px rgba(2,6,23,0.06);
+}
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e9f2;
+  background: #fff;
+  cursor: pointer;
+}
+.icon-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.appbar-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  text-align: left;
+  color: #111827;
+}
+.menu-wrap { position: relative; justify-self: end; }
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e5e9f2;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(2,6,23,0.12);
+  padding: 6px;
+  list-style: none;
+  margin: 0;
+}
+.menu li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+}
+.menu li:hover, .menu li:focus-visible { background: #f3f4f6; outline: none; }
+
+/* ------- HERO ------- */
 .hero { position: relative; min-height: var(--hero-min-h); display: grid; place-items: center; background-position: center; background-size: cover; background-repeat: no-repeat; isolation: isolate; }
 .hero-overlay { position: absolute; inset: 0; background: rgba(60, 0, 120, 0.55); z-index: 0; }
 .hero-inner { position: relative; z-index: 1; text-align: center; padding: 56px 16px; color: #fff; }
