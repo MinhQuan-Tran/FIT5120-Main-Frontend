@@ -18,6 +18,15 @@ const useAuthStore = defineStore('auth', {
         localStorage.setItem('deviceID', this.deviceID);
       }
 
+      this.login();
+    },
+
+    async login() {
+      if (!this.deviceID) {
+        console.warn('Device ID not found, re-initializing...');
+        return this.init();
+      }
+
       try {
         const response = await api.user.login({
           deviceid: this.deviceID,
@@ -37,10 +46,6 @@ const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
-
-    // async login() {
-
-    // },
 
     // async fetchToken() {
     //   if (!this.accessToken) throw new Error('Not logged in');
