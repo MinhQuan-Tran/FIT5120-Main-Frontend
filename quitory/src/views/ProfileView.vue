@@ -318,7 +318,7 @@ export default {
         quitDate: "2025-03-15",
         dailyCost: 8.0,
       },
-      memberSince: "2024-03-01",
+      memberSince: "2025-03-01",
 
       // ---- Stats ----
       stats: { daysClean: 0, badges: 0, saved: 0 },
