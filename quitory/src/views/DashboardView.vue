@@ -22,8 +22,6 @@
       setTimeout(() => {
         this.progress = 76;
       }, 1500);
-
-      this.goalStore.fetchTodayGoals();
     },
 
     watch: {

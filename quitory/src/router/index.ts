@@ -44,11 +44,12 @@ router.beforeEach(async (to, from, next) => {
         await authStore.login();
       } catch (error) {
         console.error('Login failed:', error);
-        next({ name: 'Home' });
+        return next({ name: 'Home' });
       }
     }
   }
-  next();
+
+  return next();
 });
 
 export default router;

@@ -11,7 +11,8 @@ interface RequestOptions {
 }
 
 function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
-  const baseUrl = `https://r651873zn7.execute-api.us-east-1.amazonaws.com/quitory/${resource}`;
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const baseUrl = `${apiBaseUrl}/${resource}`;
   if (!queryParams) return baseUrl;
 
   const searchParams = new URLSearchParams();
