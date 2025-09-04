@@ -45,12 +45,12 @@
     <!-- MILESTONE PROGRESS -->
     <section class="milestone-progress">
       <div class="milestone-progress-header">
-        <h3>Milestone Progress</h3>
+        <b>Milestone Progress</b>
         <span class="milestone-progress-percent">76% to next goal</span>
       </div>
 
       <div class="milestone-progress-bar">
-        <div class="milestone-progress-fill" style="width: 76%"></div>
+        <progress value="76" max="100"></progress>
       </div>
 
       <div class="milestone-progress-ticks">
@@ -123,6 +123,11 @@
 </template>
 
 <style scoped>
+  .progress-view {
+    --start-color: #d17bff;
+    --end-color: #ffb36a;
+  }
+
   /* 1) hero */
   .hero {
     position: relative;
@@ -215,29 +220,23 @@
     padding: 12px;
     border-radius: 14px;
   }
+
   .milestone-progress-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
   }
+
   .milestone-progress-header h3 {
     font-size: 14px;
   }
+
   .milestone-progress-percent {
     font-size: 12px;
   }
 
   .milestone-progress-bar {
-    height: 8px;
-    width: 100%;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .milestone-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #d17bff, #ff78c8, #ffb36a);
+    margin: 14px auto 10px;
   }
 
   .milestone-progress-ticks {
