@@ -9,11 +9,11 @@ const router = createRouter({
       name: 'Home',
       component: HomeView,
     },
-    // {
-    //   path: '/progress',
-    //   name: 'Progress',
-    //   component: () => import('@/views/ProgressView.vue'),
-    // },
+    {
+      path: '/progress',
+      name: 'Progress',
+      component: () => import('@/views/ProgressView.vue'),
+    },
     // {
     //   path: '/peer-support',
     //   name: 'Peer Support',

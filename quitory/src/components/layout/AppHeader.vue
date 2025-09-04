@@ -1,27 +1,44 @@
 <script lang="ts">
   import { RouterLink } from 'vue-router';
+  import { Capacitor } from '@capacitor/core';
 
   export default {
     components: {
       RouterLink,
     },
+    data() {
+      return {
+        isApp: false,
+      };
+    },
+    mounted() {
+      this.isApp = Capacitor.isNativePlatform();
+    },
   };
 </script>
 
 <template>
-  <header>
-    <nav>
-      <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/profile">Profile</RouterLink>
-    </nav>
-  </header>
+  <div :class="{ 'app-spacing': isApp }">
+    <header>
+      <nav>
+        <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/progress">Progress</RouterLink>
+        <RouterLink to="/profile">Profile</RouterLink>
+      </nav>
+    </header>
+  </div>
 </template>
 
 <style scoped>
+  .app-spacing {
+    margin-top: 40px; /* adjust spacing as needed */
+  }
+
   header {
-    background: #f5f7fb;
+    background: #ffffff;
     padding: 12px 16px;
-    border-bottom: 1px solid #eee;
+    margin: 12px 0;
+    border-radius: var(--radius);
   }
 
   nav {
