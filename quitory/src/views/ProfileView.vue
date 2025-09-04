@@ -45,7 +45,6 @@
     <section class="hero" aria-label="User summary">
       <img :src="form.avatarUrl" alt="User avatar" class="avatar" />
       <h2 class="name">{{ form.fullName }}</h2>
-      <p class="email">{{ form.email }}</p>
       <p class="member">Member since {{ monthYear(memberSince) }}</p>
     </section>
 
@@ -87,18 +86,6 @@
             inputmode="text"
             autocomplete="name"
             aria-label="Full name"
-          />
-        </li>
-        <li class="row">
-          <span class="label">Email</span>
-          <span v-if="!editing" class="value">{{ form.email }}</span>
-          <input
-            v-else
-            v-model="form.email"
-            type="email"
-            inputmode="email"
-            autocomplete="email"
-            aria-label="Email"
           />
         </li>
         <li class="row">
