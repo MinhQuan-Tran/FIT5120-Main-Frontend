@@ -1,8 +1,7 @@
-import { useAuthStore } from '@/stores/authStore';
-import type User from '@/types/user';
+import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-type ApiResource = 'me';
+type ApiResource = 'auth' | 'auth/currentUser' | 'goals/today';
 type QueryParams = Record<string, string | number | boolean>;
 
 interface RequestOptions {
@@ -12,7 +11,7 @@ interface RequestOptions {
 }
 
 function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
-  const baseUrl = `/api/${resource}`;
+  const baseUrl = `https://r651873zn7.execute-api.us-east-1.amazonaws.com/quitory/${resource}`;
   if (!queryParams) return baseUrl;
 
   const searchParams = new URLSearchParams();
@@ -28,14 +27,17 @@ function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
 
 async function createRequest(resource: ApiResource, options: RequestOptions) {
   const authStore = useAuthStore();
-  const token = await authStore.fetchToken();
+  // const token = await authStore.fetchToken();
 
   const url = buildUrl(resource, options.queryParams);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    // Authorization: `Bearer ${token}`,
+    deviceId: authStore.deviceID || '',
   };
+
+  console.log(`[API Request] ${options.method} ${url}`, headers);
 
   try {
     const res = await fetch(url, {
@@ -59,14 +61,26 @@ async function createRequest(resource: ApiResource, options: RequestOptions) {
   }
 }
 
-export const api = {
+const api = {
   user: {
-    async fetch() {
-      return createRequest('me', { method: 'GET' });
+    async login(data: { deviceid: string; name: string; avatar?: string }) {
+      return createRequest('auth', { method: 'POST', body: data });
     },
 
-    async update(data: Partial<Omit<User, 'id'>>) {
-      return createRequest('me', { method: 'PUT', body: data });
+    async fetch() {
+      return createRequest('auth/currentUser', { method: 'GET' });
+    },
+
+    // async update(data: Partial<Omit<User, 'id'>>) {
+    //   return createRequest('me', { method: 'PUT', body: data });
+    // },
+  },
+
+  goal: {
+    async today() {
+      return createRequest('goals/today', { method: 'GET' });
     },
   },
 };
+
+export default api;

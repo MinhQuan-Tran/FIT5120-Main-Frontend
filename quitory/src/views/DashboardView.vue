@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { mapStores } from 'pinia';
+
+  import useAuthStore from '@/stores/authStore';
+  import useGoalStore from '@/stores/goalStore';
+
   export default {
     data() {
       return {
@@ -6,10 +11,30 @@
       };
     },
 
+    computed: {
+      ...mapStores(useAuthStore, useGoalStore),
+      account() {
+        return useAuthStore().account;
+      },
+    },
+
     mounted() {
       setTimeout(() => {
         this.progress = 76;
       }, 1500);
+
+      this.goalStore.fetchTodayGoals();
+    },
+
+    watch: {
+      account: {
+        immediate: true,
+        handler(newVal) {
+          if (newVal) {
+            this.goalStore.fetchTodayGoals();
+          }
+        },
+      },
     },
   };
 </script>
@@ -19,15 +44,15 @@
     <!-- Top banner -->
     <section class="banner">
       <div class="banner-copy">
-        <p class="banner-hello">Welcome back, Alex!</p>
+        <p class="banner-hello">Welcome back, {{ account?.name || 'User' }}!</p>
         <p class="banner-sub">You're doing amazing</p>
       </div>
 
       <!-- avatar -->
       <div class="banner-avatar" aria-hidden="true">
         <img
-          src="https://ui-avatars.com/api/?name=Alex&background=3b82f6&color=fff"
-          alt="Alex avatar"
+          :src="`https://ui-avatars.com/api/?name=${account?.name || 'User'}&background=3b82f6&color=fff`"
+          alt="User avatar"
         />
       </div>
     </section>
@@ -88,6 +113,12 @@
           <input type="checkbox" />
           <span class="goal-check" aria-hidden="true"></span>
           <span class="goal-text">Read for 20 minutes</span>
+        </label>
+
+        <label v-for="goal in goalStore.todayGoals" :key="goal.id" class="goal-item">
+          <input type="checkbox" v-model="goal.completed" />
+          <span class="goal-check" aria-hidden="true"></span>
+          <span class="goal-text">{{ goal.text }}</span>
         </label>
       </div>
     </section>

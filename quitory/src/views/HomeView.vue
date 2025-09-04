@@ -1,8 +1,9 @@
 <script lang="ts">
   import { defineAsyncComponent } from 'vue';
   import { mapState } from 'pinia';
-  import { useAuthStore } from '@/stores/authStore';
+  import useAuthStore from '@/stores/authStore';
   import Skeleton from '@/components/ui/SkeletonUI.vue';
+  import { AuthStatus } from '@/types/user';
 
   export default {
     name: 'HomeGate',
@@ -15,6 +16,9 @@
 
     computed: {
       ...mapState(useAuthStore, ['status']),
+      AuthStatus() {
+        return AuthStatus;
+      },
     },
 
     methods: {
@@ -41,7 +45,7 @@
 
 <template>
   <!-- While auth is booting -->
-  <Skeleton v-if="status === 'loading'" :bars="1" :cards="2" />
+  <Skeleton v-if="status === AuthStatus.Loading" :bars="1" :cards="2" />
 
   <Suspense v-else>
     <template #default>

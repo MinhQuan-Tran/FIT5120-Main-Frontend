@@ -29,7 +29,7 @@ export function logout() {
 }
 
 export function getDeviceId() {
-  let deviceId = localStorage.getItem(DEVICE_KEY);
+  const deviceId = localStorage.getItem(DEVICE_KEY);
   return deviceId;
 }
 
@@ -62,7 +62,7 @@ export async function login() {
         name,
         avatar,
       }),
-      mode: "cors"
+      mode: 'cors',
     });
 
     const result = await response.json();
