@@ -40,7 +40,7 @@
 </script>
 
 <template>
-  <main class="dashboard">
+  <main class="dashboard-view">
     <!-- Top banner -->
     <section class="banner">
       <div class="banner-copy">
@@ -65,7 +65,7 @@
       </div>
 
       <div class="progress">
-        <progress class="progress-bar" :value="progress" max="100"></progress>
+        <progress :value="progress" max="100"></progress>
         <div class="progress-hint">{{ progress }}% to 30-day milestone</div>
       </div>
 
@@ -84,8 +84,10 @@
     <!-- Goals -->
     <section class="goals" aria-labelledby="goals-title">
       <div class="goals-header">
-        <h5 id="goals-title" class="section-title">Today's Goals</h5>
+        <b id="goals-title" class="section-title">Today's Goals</b>
       </div>
+
+      <br />
 
       <div class="goals-list">
         <!-- Completed -->
@@ -126,14 +128,9 @@
 </template>
 
 <style scoped>
-  .dashboard {
-    padding: 12px;
-    margin: 0 auto;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+  .dashboard-view {
+    --start-color: #3b82f6;
+    --end-color: #22c55e;
   }
 
   /* -------- Banner -------- */
@@ -200,30 +197,6 @@
   /* Progress bar */
   .progress {
     margin: 14px auto 10px;
-  }
-
-  .progress-bar {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 8px;
-    border: 0;
-    padding: 0;
-    background: transparent;
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  .progress-bar::-webkit-progress-bar {
-    background-color: rgba(0, 0, 0, 0.08);
-    border-radius: inherit;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  }
-
-  .progress-bar::-webkit-progress-value {
-    background: linear-gradient(90deg, #3b82f6, #22c55e);
-    border-radius: 1rem;
-    transition: width 2s cubic-bezier(0.86, 0, 0.07, 1);
   }
 
   .progress-hint {
