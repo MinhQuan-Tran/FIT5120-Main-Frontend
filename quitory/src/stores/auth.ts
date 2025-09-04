@@ -30,10 +30,6 @@ export function logout() {
 
 export function getDeviceId() {
   let deviceId = localStorage.getItem(DEVICE_KEY);
-  if (!deviceId) {
-    deviceId = generateDeviceId();
-    localStorage.setItem(DEVICE_KEY, deviceId);
-  }
   return deviceId;
 }
 
