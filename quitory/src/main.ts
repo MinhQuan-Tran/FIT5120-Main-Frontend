@@ -1,3 +1,4 @@
+// src/main.ts
 import './assets/main.css';
 
 import { createApp } from 'vue';
@@ -13,6 +14,7 @@ app.use(createPinia());
 app.use(router);
 
 const auth = useAuthStore();
+
 auth.init().finally(() => {
   app.mount('#app');
 });
