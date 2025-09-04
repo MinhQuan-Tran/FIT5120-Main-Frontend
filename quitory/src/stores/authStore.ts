@@ -1,45 +1,69 @@
-// src/stores/auth.ts
 import { defineStore } from 'pinia';
-import type User from '@/types/user';
+import api from '@/api';
 
-export const useAuthStore = defineStore('auth', {
+import { type User, AuthStatus } from '@/types/user';
+
+const useAuthStore = defineStore('auth', {
   state: () => ({
-    // msalInstance: null as PublicClientApplication | null,
     account: null as User | null,
-    accessToken: '' as string,
+    deviceID: null as string | null,
+    // accessToken: '' as string,
   }),
 
   actions: {
-    async init() {},
+    async init() {
+      this.deviceID = localStorage.getItem('deviceID');
+      if (!this.deviceID) {
+        this.deviceID = crypto.randomUUID();
+        localStorage.setItem('deviceID', this.deviceID);
+      }
+
+      this.login();
+    },
 
     async login() {
-      this.account = {
-        id: 'user-id',
-        displayName: 'User Name',
-        email: 'user@example.com',
-        photoURL: 'https://example.com/photo.jpg',
-      } as User;
+      if (!this.deviceID) {
+        console.warn('Device ID not found, re-initializing...');
+        return this.init();
+      }
 
-      this.accessToken = 'sample-access-token';
+      try {
+        const response = await api.user.login({
+          deviceid: this.deviceID,
+          name: 'User1234',
+        });
 
-      console.log('Login successful');
+        this.account = {
+          name: response.name,
+          profilePictureURL: response.profile_picture_url,
+        };
+
+        // this.accessToken = response.token;
+        console.log('Login successful:', response);
+        return response;
+      } catch (error) {
+        console.error('Login failed:', error);
+        throw error;
+      }
     },
 
-    async fetchToken() {
-      if (!this.accessToken) throw new Error('Not logged in');
-      console.log('Token fetched successfully');
-      return this.accessToken;
-    },
+    // async fetchToken() {
+    //   if (!this.accessToken) throw new Error('Not logged in');
+    //   console.log('Token fetched successfully');
+    //   return this.accessToken;
+    // },
 
-    async logout() {
-      this.account = null;
-      this.accessToken = '';
-    },
+    // async logout() {
+    //   this.account = null;
+    //   // this.accessToken = '';
+    // },
   },
 
   getters: {
-    status: () => {
-      return 'authenticated';
+    status(): AuthStatus {
+      return this.account ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
   },
 });
+
+export default useAuthStore;
