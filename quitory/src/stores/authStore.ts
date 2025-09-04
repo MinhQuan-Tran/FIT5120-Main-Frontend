@@ -34,8 +34,8 @@ const useAuthStore = defineStore('auth', {
         });
 
         this.account = {
-          name: response.name,
-          profilePictureURL: response.profile_picture_url,
+          name: response.data.name,
+          profilePictureURL: response.data.profile_picture_url,
         };
 
         // this.accessToken = response.token;
