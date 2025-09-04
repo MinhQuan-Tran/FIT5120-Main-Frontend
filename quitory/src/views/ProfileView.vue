@@ -20,9 +20,9 @@
           aria-label="Open menu"
           @click="toggleMenu"
         >
-          <!-- kebab (three dots) -->
+          <!-- three lines (hamburger) -->
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path fill="currentColor" d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/>
+            <path fill="currentColor" d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/>
           </svg>
         </button>
 
@@ -32,9 +32,11 @@
           role="menu"
           @keydown.escape.stop.prevent="closeMenu"
         >
-          <li role="menuitem" tabindex="0" @click="onEditFromMenu" @keydown.enter="onEditFromMenu"> {{ editing ? 'Save' : 'Edit Profile' }} </li>
-          <li role="menuitem" tabindex="0" @click="onPrivacy" @keydown.enter="onPrivacy"> Privacy Settings </li>
-          <li role="menuitem" tabindex="0" @click="onAbout" @keydown.enter="onAbout"> About Quitory </li>
+          <li role="menuitem" tabindex="0" @click="onEditFromMenu" @keydown.enter="onEditFromMenu">
+            {{ editing ? 'Save' : 'Edit Profile' }}
+          </li>
+          <li role="menuitem" tabindex="0" @click="onPrivacy" @keydown.enter="onPrivacy">Privacy Settings</li>
+          <li role="menuitem" tabindex="0" @click="onAbout" @keydown.enter="onAbout">About Quitory</li>
         </ul>
       </div>
     </header>
@@ -50,14 +52,17 @@
     <!-- Stats Chips -->
     <section class="chips" aria-label="Progress stats">
       <div class="chip chip-blue" role="status" aria-live="polite">
+        <div class="chip-emoji" aria-hidden="true">&#128467&#65039</div>
         <div class="chip-value">{{ stats.daysClean }}</div>
         <div class="chip-label">Days Clean</div>
       </div>
       <div class="chip chip-green" role="status" aria-live="polite">
+        <div class="chip-emoji" aria-hidden="true">&#127941</div>
         <div class="chip-value">{{ stats.badges }}</div>
         <div class="chip-label">Badges</div>
       </div>
       <div class="chip chip-purple" role="status" aria-live="polite">
+        <div class="chip-emoji" aria-hidden="true">&#128176</div>
         <div class="chip-value">{{ currency(stats.saved) }}</div>
         <div class="chip-label">Saved</div>
       </div>
@@ -202,7 +207,7 @@
           <span class="left">
             <span class="icon-pill icon-blue" aria-hidden="true">
               <!-- shield -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="currentColor" d="M12 2l7 3v6c0 5-3.4 9.4-7 10-3.6-.6-7-5-7-10V5l7-3z"/>
               </svg>
             </span>
@@ -215,7 +220,7 @@
           <span class="left">
             <span class="icon-pill icon-green" aria-hidden="true">
               <!-- download -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="currentColor" d="M5 20h14v-2H5v2zM11 4h2v7h3l-4 4-4-4h3V4z"/>
               </svg>
             </span>
@@ -228,7 +233,7 @@
           <span class="left">
             <span class="icon-pill icon-purple" aria-hidden="true">
               <!-- sync -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="currentColor" d="M12 6V3L8 7l4 4V8c2.8 0 5 2.2 5 5 0 .7-.1 1.3-.4 1.9l1.8 1.1C18.8 15 19 14 19 13c0-3.9-3.1-7-7-7zm-5 6c0-.7.1-1.3.4-1.9L5.6 9C5.2 10 5 11 5 12c0 3.9 3.1 7 7 7v3l4-4-4-4v3c-2.8 0-5-2.2-5-5z"/>
               </svg>
             </span>
@@ -240,9 +245,9 @@
         <li class="list-item danger-tile" role="button" tabindex="0" @click="onDelete" @keydown.enter="onDelete" @keydown.space.prevent="onDelete">
           <span class="left">
             <span class="icon-pill icon-red" aria-hidden="true">
-              <!-- trash -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 8h2v7h-2v-7zm4 0h2v7h-2v-7zM8 11h2v7H8v-7z"/>
+              <!-- trash solid, centered -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M9 3.75A1.75 1.75 0 0 1 10.75 2h2.5A1.75 1.75 0 0 1 15 3.75V5h4a1 1 0 1 1 0 2h-1.06l-1.1 12.08A2.75 2.75 0 0 1 14.11 22H9.89a2.75 2.75 0 0 1-2.73-2.92L6.06 7H5a1 1 0 1 1 0-2h4V3.75Zm2 .25h2v1h-2V4Zm-3.92 3h9.84l-1.04 11.48a.75.75 0 0 1-.74.68H9.89a.75.75 0 0 1-.74-.68L7.08 7Z"/>
               </svg>
             </span>
             <span class="title">Delete Account</span>
@@ -259,13 +264,11 @@
       </header>
 
       <ul class="list">
+        <!-- FAQ (force "?" glyph so it renders properly) -->
         <li class="list-item" role="button" tabindex="0" @click="onFAQ" @keydown.enter="onFAQ" @keydown.space.prevent="onFAQ">
           <span class="left">
             <span class="icon-pill icon-orange" aria-hidden="true">
-              <!-- Question mark -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path fill="currentColor" d="M11 18h2v-2h-2v2zm1-16C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm-1-4h2v-2h-2v2zm1-10c-1.7 0-3 1.3-3 3h2c0-.6.4-1 1-1s1 .4 1 1-.4 1-1 1c-1.1 0-2 .9-2 2h2c0-.6.4-1 1-1s1 .4 1 1-.4 1-1 1h-1v2h2v-1c1.1 0 2-.9 2-2s-.9-2-2-2c.6 0 1-.4 1-1s-.4-1-1-1z"/>
-              </svg>
+              <span class="glyph">?</span>
             </span>
             <span class="title">FAQ</span>
           </span>
@@ -275,9 +278,9 @@
         <li class="list-item" role="button" tabindex="0" @click="onContactSupport" @keydown.enter="onContactSupport" @keydown.space.prevent="onContactSupport">
           <span class="left">
             <span class="icon-pill icon-blue" aria-hidden="true">
-              <!-- Support icon -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12v5c0 1.1.9 2 2 2h3v-7H4v-1c0-4.4 3.6-8 8-8s8 3.6 8 8v1h-3v7h3c1.1 0 2-.9 2-2v-5c0-5.5-4.5-10-10-10z"/>
+              <!-- headset/support -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 2a8 8 0 0 0-8 8v4a3 3 0 0 0 3 3h2v-5H7V10a5 5 0 0 1 10 0v2h-2v5h2a3 3 0 0 0 3-3v-4a8 8 0 0 0-8-8Z"/>
               </svg>
             </span>
             <span class="title">Contact Support</span>
@@ -288,12 +291,12 @@
         <li class="list-item" role="button" tabindex="0" @click="onRateApp" @keydown.enter="onRateApp" @keydown.space.prevent="onRateApp">
           <span class="left">
             <span class="icon-pill icon-gold" aria-hidden="true">
-              <!-- Star icon -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path fill="currentColor" d="M12 17.3l6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7l-7.1.6 5.4 4.7-1.6 7z"/>
+              <!-- star -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="m12 17.3 6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7l-7.1.6 5.4 4.7-1.6 7z"/>
               </svg>
             </span>
-            <span class="title">Rate App</span>
+            <span class="title">Review</span>
           </span>
           <span class="chevron" aria-hidden="true"></span>
         </li>
@@ -301,9 +304,9 @@
         <li class="list-item" role="button" tabindex="0" @click="onAbout" @keydown.enter="onAbout" @keydown.space.prevent="onAbout">
           <span class="left">
             <span class="icon-pill icon-grey" aria-hidden="true">
-              <!-- Info icon -->
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path fill="currentColor" d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
+              <!-- info -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z"/>
               </svg>
             </span>
             <span class="title">About Quitory</span>
@@ -316,8 +319,6 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onBeforeUnmount } from "vue";
-
 export default {
   name: "ProfileView",
   data() {
@@ -352,7 +353,8 @@ export default {
       menuOpen: false as boolean,
 
       // Platform polish
-      prefersReducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+      prefersReducedMotion:
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
       midnightTimer: 0 as any,
     };
   },
@@ -365,7 +367,6 @@ export default {
     } catch {}
   },
   mounted() {
-    // Click outside to close menu
     document.addEventListener("click", this.onDocClick, { capture: true });
   },
   beforeUnmount() {
@@ -417,16 +418,18 @@ export default {
 
     // App bar actions
     onBack() {
-      // If router present:
-      // this.$router?.back?.();
       history.length > 1 ? history.back() : (window.location.href = "/");
     },
     toggleMenu(e: MouseEvent) {
       e.stopPropagation();
       this.menuOpen = !this.menuOpen;
     },
-    closeMenu() { this.menuOpen = false; },
-    onDocClick() { if (this.menuOpen) this.closeMenu(); },
+    closeMenu() {
+      this.menuOpen = false;
+    },
+    onDocClick() {
+      if (this.menuOpen) this.closeMenu();
+    },
 
     // Account actions (stubbed)
     onPrivacy() { alert("Open Privacy Settings"); this.closeMenu(); },
@@ -516,7 +519,7 @@ export default {
   color: #111827;
 }
 
-/* Kebab menu */
+/* Menu */
 .menu-wrap { position: relative; justify-self: end; }
 .menu {
   position: absolute;
@@ -565,13 +568,14 @@ export default {
 /* Chips */
 .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0 14px; }
 .chip {
-  border-radius: 12px; text-align: center; padding: 12px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 12px; text-align: center; padding: 14px 6px;
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06); border: 1px solid #e5e9f2;
-  font-weight: 800;
-  min-height: 64px;
+  min-height: 84px; font-weight: 800;
 }
-.chip-value { font-size: 18px; line-height: 1; }
-.chip-label { font-size: 11px; font-weight: 600; opacity: .75; margin-top: 6px; }
+.chip-emoji { font-size: 22px; line-height: 1; margin-top: 2px; }
+.chip-value { font-size: 24px; line-height: 1.1; font-weight: 800; }
+.chip-label { font-size: 12px; font-weight: 700; opacity: .8; margin-top: 2px; }
 .chip-blue   { background: #dbeafe; color: #1e3a8a; }
 .chip-green  { background: #dcfce7; color: #166534; }
 .chip-purple { background: #ede9fe; color: #4c1d95; }
@@ -641,17 +645,9 @@ input {
 }
 
 /* Account list tiles */
-.list {
-  list-style: none;
-  margin: 4px 8px 12px;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
+.list { list-style: none; margin: 4px 8px 12px; padding: 0; display: grid; gap: 10px; }
 .list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
   padding: 14px 14px;
   border-radius: 12px;
   border: 1px solid #e5e9f2;
@@ -665,12 +661,7 @@ input {
 .title { font-size: 14px; font-weight: 700; color: #0f172a; }
 
 /* Right chevron */
-.chevron {
-  flex: 0 0 auto;
-  width: 18px;
-  text-align: right;
-  color: #9aa4b2;
-}
+.chevron { flex: 0 0 auto; width: 18px; text-align: right; color: #9aa4b2; }
 .chevron::before { content: ">"; font-size: 18px; line-height: 1; }
 
 /* Icon pills */
@@ -679,6 +670,10 @@ input {
   display: grid; place-items: center;
   background: #eef2f7; color: #334155;
 }
+.icon-pill svg { width: 18px; height: 18px; display: block; }
+.icon-pill .glyph { font-weight: 900; font-size: 18px; line-height: 1; transform: translateY(-1px); } /* the "?" */
+
+/* Color variants */
 .icon-blue   { background: #e0ecff; color: #1e40af; }
 .icon-green  { background: #dcfce7; color: #166534; }
 .icon-purple { background: #ede9fe; color: #4c1d95; }
@@ -688,12 +683,8 @@ input {
 .icon-grey   { background: #e5e7eb; color: #374151; }
 
 /* Danger tile */
-.danger-tile {
-  border-color: #fecaca;
-  background: #fff5f5;
-  color: #b91c1c;
-}
-.danger-tile .title   { color: #b91c1c; }
+.danger-tile { border-color: #fecaca; background: #fff5f5; color: #b91c1c; }
+.danger-tile .title { color: #b91c1c; }
 .danger-tile .chevron { color: #ef4444; }
 
 /* Dark mode */
@@ -708,27 +699,20 @@ input {
   .label, .switch-text .subtitle { color: #9ca3af; }
   .value, .switch-text .title { color: #e5e7eb; }
   input, .quiet-time { background: #0f1622; border-color: #1f2937; color: #e5e7eb; }
-  .chip { border-color: #1f2937; }
 
-  .list-item {
-    background: #111827;
-    border-color: #1f2937;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-  }
+  .chip { border-color: #1f2937; }
+  .chip-blue   { background: #1e3a8a22; color: #93c5fd; }
+  .chip-green  { background: #14532d22; color: #86efac; }
+  .chip-purple { background: #4c1d9522; color: #c4b5fd; }
+
+  .list-item { background: #111827; border-color: #1f2937; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
   .title { color: #e5e7eb; }
   .chevron { color: #9ca3af; }
-  .danger-tile {
-    background: #2a1111;
-    border-color: #5b1a1a;
-    color: #fca5a5;
-  }
+  .danger-tile { background: #2a1111; border-color: #5b1a1a; color: #fca5a5; }
   .danger-tile .title { color: #fca5a5; }
   .danger-tile .chevron { color: #f87171; }
 }
 
-/* Reduced motion: tame transitions for accessibility */
-.reduce-motion * {
-  transition: none !important;
-  animation: none !important;
-}
+/* Reduced motion */
+.reduce-motion * { transition: none !important; animation: none !important; }
 </style>
