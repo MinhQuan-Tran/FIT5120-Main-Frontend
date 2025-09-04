@@ -1,7 +1,7 @@
 import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-type ApiResource = 'auth' | 'auth/currentUser' | 'goals/today';
+type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today';
 type QueryParams = Record<string, string | number | boolean>;
 
 interface RequestOptions {
@@ -65,7 +65,7 @@ async function createRequest(resource: ApiResource, options: RequestOptions) {
 const api = {
   user: {
     async login(data: { deviceid: string; name: string; avatar?: string }) {
-      return createRequest('auth', { method: 'POST', body: data });
+      return createRequest('auth/login', { method: 'POST', body: data });
     },
 
     async fetch() {
