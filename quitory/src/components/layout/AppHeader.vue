@@ -23,6 +23,7 @@
       <nav>
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/progress">Progress</RouterLink>
+        <RouterLink to="/profile">Profile</RouterLink>
       </nav>
     </header>
   </div>

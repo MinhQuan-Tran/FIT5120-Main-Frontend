@@ -36,6 +36,11 @@ section {
   padding: 16px;
 }
 
+button {
+  all: unset;
+  cursor: pointer;
+}
+
 progress {
   -webkit-appearance: none;
   appearance: none;

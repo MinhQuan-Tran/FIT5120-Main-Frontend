@@ -35,7 +35,9 @@ const useAuthStore = defineStore('auth', {
 
         this.account = {
           name: response.data.name,
-          profilePictureURL: response.data.profile_picture_url,
+          profilePictureURL:
+            response.data.profile_picture_url ||
+            `https://ui-avatars.com/api/?name=${response.data.name}&background=3b82f6&color=fff`,
         };
 
         // this.accessToken = response.token;

@@ -25,6 +25,11 @@ const router = createRouter({
     //   name: 'Peer Support',
     //   component: () => import('@/views/PeerSupportView.vue'),
     // },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('@/views/ProfileView.vue'),
+    },
     // {
     //   path: '/about',
     //   name: 'about',
