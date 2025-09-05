@@ -1,7 +1,10 @@
 :root {
   --bg: #ececec;
   --text: #0f172a;
-  --radius: 16px;
+  --radius-lg: 16px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --padding: 12px;
 
   /* Default colors */
   --start-color: #919191;
@@ -33,7 +36,13 @@ section {
   background: #ffffff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 16px;
+  padding: var(--padding);
+}
+
+.icon {
+  height: 1em;
+  width: 1em;
+  vertical-align: middle;
 }
 
 button {

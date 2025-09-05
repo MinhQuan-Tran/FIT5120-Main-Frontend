@@ -46,7 +46,10 @@
     <section class="milestone-progress">
       <div class="milestone-progress-header">
         <b>Milestone Progress</b>
-        <span class="milestone-progress-percent">76% to next goal</span>
+        <button class="milestone-customise-button">
+          <img class="icon" src="@/assets/icons/icons8-settings.svg" alt="" />
+          Customise
+        </button>
       </div>
 
       <div class="milestone-progress-bar">
@@ -60,19 +63,19 @@
       </div>
     </section>
 
+    <section class="achievement-alert">
+      <div class="achievement-alert-icon" aria-hidden="true"></div>
+      <div class="achievement-alert-content">
+        <p class="achievement-alert-title">New Achievement Unlocked!</p>
+        <p class="achievement-alert-desc">Strong Will badge earned yesterday</p>
+      </div>
+    </section>
+
     <!-- ACHIEVEMENTS -->
     <section class="achievements">
-      <div class="achievement-alert">
-        <div class="achievement-alert-icon" aria-hidden="true"></div>
-        <div class="achievement-alert-content">
-          <p class="achievement-alert-title">New Achievement Unlocked!</p>
-          <p class="achievement-alert-desc">Strong Will badge earned yesterday</p>
-        </div>
-      </div>
-
       <!-- earned only (example) -->
       <div class="achievements-header">
-        <h3>Your Achievements</h3>
+        <b>Your Achievements</b>
         <span>4 of 12 earned</span>
       </div>
 
@@ -130,16 +133,15 @@
 
   /* 1) hero */
   .hero {
-    position: relative;
-    padding: 14px;
-    border-radius: var(--radius);
-    color: #fff;
-    background: linear-gradient(180deg, #9a35ff 0%, #f04f86 50%, #ee7a4d 100%);
+    background: linear-gradient(135deg, #9a35ff 0%, #f04f86 50%, #ee7a4d 100%);
     overflow: hidden;
+    color: #fff;
   }
+
   .streak {
     text-align: center;
   }
+
   .streak-icon {
     width: 56px;
     height: 56px;
@@ -147,16 +149,19 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.24);
   }
+
   .streak-days {
     font-size: 56px;
     line-height: 1;
     margin: 6px 0 4px;
     font-weight: 800;
   }
+
   .streak-label {
     font-size: 15px;
     opacity: 0.98;
   }
+
   .streak-sub {
     font-size: 13px;
     opacity: 0.92;
@@ -166,8 +171,8 @@
   /* next milestone inside hero */
   .next-milestone {
     margin-top: 14px;
-    padding: 12px;
-    border-radius: 12px;
+    padding: var(--padding);
+    border-radius: var(--radius);
     text-align: center;
     background: rgba(255, 255, 255, 0.22);
     backdrop-filter: blur(2px);
@@ -186,30 +191,37 @@
 
   /* 2) progress summary */
   .progress-summary {
-    padding: 14px;
-    border-radius: 16px;
-    background: linear-gradient(180deg, #ffd46a 0%, #ff9b6a 100%);
+    background: linear-gradient(135deg, #facc15 0%, #fb923c 50%, #f87171 100%);
     color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
+
   .progress-summary-title {
     font-size: 16px;
     font-weight: 800;
     margin-bottom: 6px;
   }
+
   .progress-summary-text {
     font-size: 13px;
     margin-bottom: 10px;
   }
+
   .progress-summary-stats {
     display: flex;
     gap: 16px;
   }
+
   .summary-stat {
     display: grid;
   }
+
   .summary-stat-value {
     font-weight: 800;
   }
+
   .summary-stat-label {
     font-size: 12px;
     opacity: 0.85;
@@ -217,8 +229,6 @@
 
   /* 3) milestone progress */
   .milestone-progress {
-    padding: 12px;
-    border-radius: 14px;
   }
 
   .milestone-progress-header {
@@ -246,31 +256,41 @@
     font-size: 11px;
   }
 
+  .milestone-customise-button {
+    color: #9333ea;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   /* 4) achievements */
   .achievements .achievements-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 12px 0 8px;
+    margin-bottom: var(--padding);
   }
+
   .achievement-alert {
     display: flex;
     gap: 10px;
-    padding: 12px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
+    padding: var(--padding);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid #4ade80;
   }
+
   .achievement-alert-icon {
     width: 36px;
     height: 36px;
     border-radius: 10px;
     background: linear-gradient(180deg, #38ef7d, #11998e);
   }
+
   .achievement-alert-title {
     font-weight: 700;
     font-size: 14px;
   }
+
   .achievement-alert-desc {
     font-size: 12px;
   }
@@ -280,14 +300,16 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
+
   .badge {
-    padding: 12px;
+    padding: var(--padding);
     border-radius: 14px;
     min-height: 110px;
     background: #1a1f2b;
     border: 1px solid var(--line);
     color: #fff;
   }
+
   .badge--gold {
     background: linear-gradient(180deg, #ffe28b, #ffba6b);
     color: #fff;
@@ -296,22 +318,27 @@
     background: linear-gradient(180deg, #6fc3ff, #8fa7ff);
     color: #fff;
   }
+
   .badge--green {
     background: linear-gradient(180deg, #79f2a8, #57d6a1);
     color: #fff;
   }
+
   .badge--purple {
     background: linear-gradient(180deg, #c79aff, #9a7bff);
     color: #fff;
   }
+
   .badge-icon {
     font-size: 20px;
   }
+
   .badge-title {
     margin-top: 4px;
     font-weight: 800;
     font-size: 14px;
   }
+
   .badge-desc {
     font-size: 12px;
     opacity: 0.95;
@@ -323,6 +350,7 @@
     gap: 10px;
     margin-top: 12px;
   }
+
   .pill {
     padding: 10px 12px;
     border-radius: 999px;
@@ -333,23 +361,23 @@
     justify-content: space-between;
     font-size: 12px;
   }
+
   .pill--active {
     border-color: rgba(255, 255, 255, 0.2);
   }
 
   /* 5) share section */
   .share {
-    padding: 16px;
-    border-radius: 16px;
-    color: #fff;
     text-align: center;
     background: linear-gradient(180deg, #7c4dff, #ff6f91);
-    margin-bottom: 20px;
+    color: #fff;
   }
+
   .share-title {
     font-size: 16px;
     margin-bottom: 4px;
   }
+
   .share-sub {
     font-size: 12px;
     opacity: 0.95;
@@ -362,12 +390,12 @@
     flex-wrap: wrap;
     justify-content: center;
   }
+
   .share-chip {
     padding: 10px 12px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.18);
     border: 1px solid rgba(255, 255, 255, 0.28);
-    color: #fff;
     font-size: 12px;
   }
 </style>
