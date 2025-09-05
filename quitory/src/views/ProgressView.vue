@@ -7,7 +7,9 @@
     <!-- HERO -->
     <section class="hero">
       <div class="streak">
-        <div class="streak-icon" aria-hidden="true"></div>
+        <div class="streak-icon" aria-hidden="true">
+          <img src="@/assets/icons/icons8-fire.gif" style="background: transparent" alt="" />
+        </div>
         <h1 class="streak-days">23</h1>
         <p class="streak-label">Days Vape-Free</p>
         <p class="streak-sub">Your longest streak yet! 🔥</p>
@@ -145,6 +147,8 @@
   .streak-icon {
     width: 56px;
     height: 56px;
+    display: grid;
+    place-items: center;
     margin: 4px auto 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.24);
