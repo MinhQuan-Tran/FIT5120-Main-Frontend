@@ -39,16 +39,13 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-  // Base security for project team, teaching team and IMs)
+  // Base security for project team, teaching team and IMs
   if (sessionStorage.getItem('isBaseAuthenticated') === 'true') return true;
 
   // Prompt until correct or user cancels
   for (;;) {
     const password = prompt('Password:');
     if (!password) return false; // user hit cancel
-
-    console.log('Checking password against hash:', import.meta.env.VITE_API_BASE_AUTH_PASSWORD);
-    console.log('PHC from env:', JSON.stringify(import.meta.env.VITE_API_BASE_AUTH_PASSWORD));
 
     const isValid = await isPasswordValid(
       password,
