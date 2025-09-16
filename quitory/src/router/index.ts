@@ -15,6 +15,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/auth',
+      name: 'Auth',
+      component: () => import('@/views/AuthView.vue'),
+    },
+    {
       path: '/progress',
       name: 'Progress',
       component: () => import('@/views/ProgressView.vue'),

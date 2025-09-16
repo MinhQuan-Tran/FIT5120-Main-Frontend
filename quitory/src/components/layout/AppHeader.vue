@@ -24,6 +24,7 @@
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/progress">Progress</RouterLink>
         <RouterLink to="/profile">Profile</RouterLink>
+        <RouterLink to="/auth">Sign In</RouterLink>
       </nav>
     </header>
   </div>
