@@ -18,11 +18,11 @@
 
     computed: {
       personalAchievements(): Achievement[] {
-        return this.achievements.filter((a) => a.type === 'personal');
+        return this.achievements.filter((a) => a.type === AchievementType.Personal);
       },
 
       groupAchievements(): Achievement[] {
-        return this.achievements.filter((a) => a.type === 'group');
+        return this.achievements.filter((a) => a.type === AchievementType.Group);
       },
     },
 
