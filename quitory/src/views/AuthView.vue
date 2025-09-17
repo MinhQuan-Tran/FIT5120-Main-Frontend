@@ -133,6 +133,11 @@
           const idToken = (res.result as GoogleLoginResponseOnline)?.idToken as string | undefined;
           if (!idToken) throw new Error('No idToken returned from Google');
 
+          // Log id in development mode
+          if (import.meta.env.DEV) {
+            console.log('Google ID Token:', idToken);
+          }
+
           const r = await fetch(this.verifyUrl, {
             method: 'POST',
             credentials: 'include',
