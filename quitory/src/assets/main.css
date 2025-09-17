@@ -83,3 +83,12 @@ progress::-webkit-progress-value {
   border-radius: 999px;
   transition: width 2s cubic-bezier(0.86, 0, 0.07, 1);
 }
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+}
