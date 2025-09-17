@@ -1,4 +1,4 @@
-// import useAuthStore from '@/stores/authStore';
+import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today';
@@ -27,17 +27,15 @@ function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
 }
 
 async function createRequest(resource: ApiResource, options: RequestOptions) {
-  // const authStore = useAuthStore();
-  // const token = await authStore.fetchToken();
+  const authStore = useAuthStore();
+  const token = await authStore.fetchToken();
 
   const url = buildUrl(resource, options.queryParams);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    // Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
   };
-
-  console.log(`[API Request] ${options.method} ${url}`, headers);
 
   try {
     const res = await fetch(url, {
@@ -63,17 +61,13 @@ async function createRequest(resource: ApiResource, options: RequestOptions) {
 
 const api = {
   user: {
-    async login(data: { deviceid: string; name: string; avatar?: string }) {
-      return createRequest('auth/login', { method: 'POST', body: data });
+    async login() {
+      return createRequest('auth/login', { method: 'POST' });
     },
 
     async fetch() {
       return createRequest('auth/currentUser', { method: 'GET' });
     },
-
-    // async update(data: Partial<Omit<User, 'id'>>) {
-    //   return createRequest('me', { method: 'PUT', body: data });
-    // },
   },
 
   goal: {

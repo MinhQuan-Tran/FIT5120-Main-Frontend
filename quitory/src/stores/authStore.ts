@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
 import { type User, AuthStatus } from '@/types/user';
+import api from '@/api';
 
 const useAuthStore = defineStore('auth', {
   state: () => ({
-    account: null as User | null,
+    user: null as User | null,
+    idToken: null as string | null,
     loading: false as boolean,
     err: null as string | null,
   }),
@@ -29,22 +31,19 @@ const useAuthStore = defineStore('auth', {
       try {
         // Sign in using Google
         const res = await SocialLogin.login({ provider: 'google', options: {} });
-        const idToken = (res.result as GoogleLoginResponseOnline).idToken as string | undefined;
+        this.idToken = (res.result as GoogleLoginResponseOnline).idToken as string | null;
 
         // Log id in development mode
         if (import.meta.env.DEV) {
-          console.log('Google ID Token:', idToken);
+          console.log('Google ID Token:', this.idToken);
         }
 
-        if (!idToken) throw new Error('No idToken returned from Google');
+        if (!this.idToken) throw new Error('No idToken returned from Google');
 
-        // Mock the user data for now
-        this.account = {
-          name: 'User1234', // Ideally, this would come from your backend
-          profilePictureURL: `https://ui-avatars.com/api/?name=User1234&background=3b82f6&color=fff`,
-        };
-
-        console.log('Login successful');
+        await api.user.login().then((data) => {
+          console.log('Logged in user:', data);
+          this.user = data.data;
+        });
       } catch (e) {
         this.err = 'Google login failed';
         console.error('Login failed', e);
@@ -53,8 +52,13 @@ const useAuthStore = defineStore('auth', {
       }
     },
 
+    fetchToken(): Promise<string | null> {
+      // In a real app, you would retrieve and return a valid auth token here
+      return Promise.resolve(this.idToken);
+    },
+
     logout() {
-      this.account = null;
+      this.user = null;
       this.err = null;
       console.log('Logged out successfully');
     },
@@ -63,9 +67,9 @@ const useAuthStore = defineStore('auth', {
   getters: {
     status(): AuthStatus {
       // Ignore auth status during development
-      if (import.meta.env.DEV) return AuthStatus.Authenticated;
+      // if (import.meta.env.DEV) return AuthStatus.Authenticated;
 
-      return this.account ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
+      return this.user ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
   },
 });
