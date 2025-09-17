@@ -23,10 +23,6 @@
     },
 
     computed: {
-      enviroment(): string {
-        return import.meta.env.MODE;
-      },
-
       verifyUrl(): string {
         return `${import.meta.env.VITE_API_BASE_URL}/auth/google/verify`;
       },
