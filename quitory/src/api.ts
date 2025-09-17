@@ -1,4 +1,4 @@
-import useAuthStore from '@/stores/authStore';
+// import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today';
@@ -27,7 +27,7 @@ function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
 }
 
 async function createRequest(resource: ApiResource, options: RequestOptions) {
-  const authStore = useAuthStore();
+  // const authStore = useAuthStore();
   // const token = await authStore.fetchToken();
 
   const url = buildUrl(resource, options.queryParams);
@@ -35,7 +35,6 @@ async function createRequest(resource: ApiResource, options: RequestOptions) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     // Authorization: `Bearer ${token}`,
-    deviceId: authStore.deviceID || '',
   };
 
   console.log(`[API Request] ${options.method} ${url}`, headers);
