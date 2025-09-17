@@ -23,6 +23,10 @@
     },
 
     computed: {
+      enviroment(): string {
+        return import.meta.env.MODE;
+      },
+
       verifyUrl(): string {
         return `${import.meta.env.VITE_API_BASE_URL}/auth/google/verify`;
       },
@@ -196,6 +200,7 @@
 <template>
   <main class="auth">
     <section class="card">
+      {{ enviroment }}
       <h1 class="title">Sign in</h1>
 
       <br />
