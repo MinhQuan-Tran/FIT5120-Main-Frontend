@@ -6,8 +6,8 @@
   export default {
     computed: {
       ...mapStores(useAuthStore),
-      account() {
-        return useAuthStore().account;
+      user() {
+        return useAuthStore().user;
       },
     },
   };
@@ -18,7 +18,7 @@
     <!-- Profile hero -->
     <section class="profile-hero">
       <div class="avatar-wrap">
-        <img class="avatar" :src="account?.profilePictureURL" alt="User avatar" />
+        <img class="avatar" :src="user?.profilePictureURL" alt="User avatar" />
         <!--
         <button class="avatar-edit" aria-label="Change photo">
           <span class="icon camera"></span>
@@ -27,7 +27,7 @@
       </div>
 
       <div class="identity">
-        <p class="name">{{ account?.name }}</p>
+        <p class="name">{{ user?.name }}</p>
         <p class="email">alex.johnson@email.com</p>
         <p class="member-since">Member since March 2024</p>
       </div>
@@ -63,7 +63,7 @@
             <span class="icon user"></span>
             <span class="info-label">Full Name</span>
           </div>
-          <span class="info-value">{{ account?.name }}</span>
+          <span class="info-value">{{ user?.name }}</span>
         </li>
 
         <li class="info-item">

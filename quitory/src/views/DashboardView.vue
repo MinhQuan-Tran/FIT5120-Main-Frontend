@@ -13,8 +13,8 @@
 
     computed: {
       ...mapStores(useAuthStore, useGoalStore),
-      account() {
-        return useAuthStore().account;
+      user() {
+        return useAuthStore().user;
       },
     },
 
@@ -22,17 +22,6 @@
       setTimeout(() => {
         this.progress = 76;
       }, 1500);
-    },
-
-    watch: {
-      account: {
-        immediate: true,
-        handler(newVal) {
-          if (newVal) {
-            this.goalStore.fetchTodayGoals();
-          }
-        },
-      },
     },
   };
 </script>
@@ -42,13 +31,13 @@
     <!-- Top banner -->
     <section class="banner">
       <div class="banner-copy">
-        <p class="banner-hello">Welcome back, {{ account?.name || 'User' }}!</p>
+        <p class="banner-hello">Welcome back, {{ user?.name || 'User' }}!</p>
         <p class="banner-sub">You're doing amazing</p>
       </div>
 
       <!-- avatar -->
       <div class="banner-avatar" aria-hidden="true">
-        <img :src="account?.profilePictureURL" alt="User avatar" />
+        <img :src="user?.profilePictureURL" alt="User avatar" />
       </div>
     </section>
 

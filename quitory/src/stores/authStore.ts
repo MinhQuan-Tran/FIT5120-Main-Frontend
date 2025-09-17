@@ -1,10 +1,13 @@
 import { defineStore } from 'pinia';
 import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
+import api from '@/api';
+
 import { type User, AuthStatus } from '@/types/user';
 
 const useAuthStore = defineStore('auth', {
   state: () => ({
-    account: null as User | null,
+    user: null as User | null,
+    idToken: null as string | null,
     loading: false as boolean,
     err: null as string | null,
   }),
@@ -20,6 +23,11 @@ const useAuthStore = defineStore('auth', {
       });
     },
 
+    fetchToken(): Promise<string | null> {
+      // TODO: retrieve and return a valid auth token here
+      return Promise.resolve(this.idToken);
+    },
+
     async login() {
       if (this.loading) return;
 
@@ -27,45 +35,80 @@ const useAuthStore = defineStore('auth', {
       this.err = null;
 
       try {
-        // Sign in using Google
+        // Perform Google login using the capacitor social login plugin
         const res = await SocialLogin.login({ provider: 'google', options: {} });
-        const idToken = (res.result as GoogleLoginResponseOnline).idToken as string | undefined;
-
-        // Log id in development mode
-        if (import.meta.env.DEV) {
-          console.log('Google ID Token:', idToken);
-        }
+        const idToken = (res.result as GoogleLoginResponseOnline)?.idToken as string | null;
 
         if (!idToken) throw new Error('No idToken returned from Google');
 
-        // Mock the user data for now
-        this.account = {
-          name: 'User1234', // Ideally, this would come from your backend
-          profilePictureURL: `https://ui-avatars.com/api/?name=User1234&background=3b82f6&color=fff`,
-        };
+        this.idToken = idToken;
 
-        console.log('Login successful');
-      } catch (e) {
-        this.err = 'Google login failed';
-        console.error('Login failed', e);
-      } finally {
+        await api.user
+          .login()
+          .then((data) => {
+            console.log('Login API response:', data);
+
+            const user = data.data;
+
+            if (!user || !user.id || !user.name) {
+              throw new Error('Invalid user data from login API');
+            }
+
+            this.user = {
+              id: String(user.id),
+              name: String(user.name),
+              profilePictureURL: `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`,
+            };
+
+            console.log('Logged in successfully:', this.user);
+
+            this.loading = false;
+          })
+          .catch((apiError) => {
+            console.error('Login API error:', apiError);
+            throw apiError;
+          });
+      } catch (error) {
+        this.err = this.getFriendlyErrorMessage(
+          error instanceof Error ? error.message : 'Google login failed',
+        );
         this.loading = false;
+        throw error; // propagate error to be handled in AuthView
       }
     },
 
     logout() {
-      this.account = null;
+      this.user = null;
+      this.idToken = null;
       this.err = null;
       console.log('Logged out successfully');
+    },
+
+    // Function to map error codes to user-friendly messages
+    getFriendlyErrorMessage(codeOrMsg: string): string {
+      const code = (codeOrMsg || '').toLowerCase();
+
+      if (code.includes('access_denied')) return 'Sign-in was cancelled.';
+      if (code.includes('popup closed')) return 'Sign-in window was closed.';
+      if (code.includes('interaction_required')) return 'Action needed to continue.';
+      if (code.includes('login_required')) return 'Please sign in to Google first.';
+      if (code.includes('consent_required')) return 'Permission required.';
+      if (code.includes('invalid_scope')) return 'Invalid permission request.';
+      if (code.includes('server_error') || code.includes('temporarily_unavailable'))
+        return 'Google is temporarily unavailable.';
+      if (code.includes('reauth failed') || code.includes('[16]'))
+        return 'Please re-authenticate your Google account.';
+
+      return 'We couldn’t complete Google sign-in.';
     },
   },
 
   getters: {
     status(): AuthStatus {
       // Ignore auth status during development
-      if (import.meta.env.DEV) return AuthStatus.Authenticated;
+      // if (import.meta.env.DEV) return AuthStatus.Authenticated;
 
-      return this.account ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
+      return this.user ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
   },
 });

@@ -1,194 +1,75 @@
 <script lang="ts">
-  import { defineComponent } from 'vue';
-  import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
+  import { defineComponent, ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import useAuthStore from '@/stores/authStore';
 
-  type PopupMessage = {
-    source: 'oauth-popup';
-    provider: 'google';
-    ok: false;
-    error: string;
-    error_description?: string;
-  };
+  // TODO: Fix error handling for popup
+  // TODO: Convert to Options API
 
   export default defineComponent({
     name: 'AuthView',
 
-    data() {
-      return {
-        loading: false as boolean,
-        err: null as string | null,
-        inited: false as boolean,
-        gotPopupError: false as boolean,
+    setup() {
+      const authStore = useAuthStore();
+      const router = useRouter();
+      const loading = ref(false);
+      const err = ref<string | null>(null);
+
+      // Function to handle sending error back to the opener (if this is a popup)
+      const handlePopupError = (error: string, errorDescription?: string) => {
+        const isPopup = window.opener && window.opener !== window; // check if it's a popup
+        if (isPopup) {
+          const payload = {
+            source: 'oauth-popup',
+            provider: 'google',
+            ok: false,
+            error: error,
+            error_description: errorDescription,
+          };
+          // Send the error to the parent window
+          window.opener.postMessage(payload, window.location.origin);
+          window.close(); // Close the popup after sending the message
+        }
       };
-    },
 
-    computed: {
-      verifyUrl(): string {
-        return `${import.meta.env.VITE_API_BASE_URL}/auth/google/verify`;
-      },
+      // Check if the URL contains an error from the Google sign-in process
+      onMounted(() => {
+        const urlParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        const error = urlParams.get('error');
+        const state = urlParams.get('state');
 
-      nextPath(): string {
-        const q = this.$route?.query?.next;
-        return typeof q === 'string' && q.startsWith('/') ? q : '/';
-      },
-
-      myOrigin(): string {
-        return window.location.origin;
-      },
-    },
-
-    methods: {
-      async ensureInit() {
-        if (this.inited) return;
-        await SocialLogin.initialize({
-          google: {
-            webClientId: import.meta.env.VITE_GSI_CLIENT_ID as string,
-            mode: 'online',
-          },
-        });
-        this.inited = true;
-      },
-
-      parseHashParams(hash: string): Record<string, string> {
-        const q = hash.replace(/^#/, '');
-        if (!q) return {};
-        const out: Record<string, string> = {};
-        for (const part of q.split('&')) {
-          if (!part) continue;
-          const [k, v = ''] = part.split('=');
-          out[decodeURIComponent(k)] = decodeURIComponent(v);
+        if (error && state === 'popup') {
+          handlePopupError(error, urlParams.get('error_description') ?? undefined);
+          authStore.err = error;
         }
-        return out;
-      },
+      });
 
-      toFriendlyMessage(codeOrMsg: string): string {
-        const code = (codeOrMsg || '').toLowerCase();
-
-        if (code.includes('access_denied')) return 'Sign-in was cancelled.';
-        if (code.includes('popup closed')) return 'Sign-in window was closed.';
-        if (code.includes('interaction_required')) return 'Action needed to continue.';
-        if (code.includes('login_required')) return 'Please sign in to Google first.';
-        if (code.includes('consent_required')) return 'Permission required.';
-        if (code.includes('invalid_scope')) return 'Invalid permission request.';
-        if (code.includes('server_error') || code.includes('temporarily_unavailable'))
-          return 'Google is temporarily unavailable.';
-        if (code.includes('reauth failed') || code.includes('[16]'))
-          return 'Please re-authenticate your Google account.';
-
-        return 'We couldn’t complete Google sign-in.';
-      },
-
-      // If this is the popup with an OAuth error hash, post it to opener and close.
-      handlePopupErrorRelay(): boolean {
-        const isPopup = !!(window.opener && window.opener !== window);
-        if (!isPopup) return false;
-
-        const params = this.parseHashParams(window.location.hash || '');
-        const hasError = typeof params.error === 'string' && params.error.length > 0;
-        const isPopupState = params.state === 'popup' || !params.state;
-
-        if (!hasError || !isPopupState) return false;
-
-        const payload: PopupMessage = {
-          source: 'oauth-popup',
-          provider: 'google',
-          ok: false,
-          error: params.error,
-          error_description: params.error_description,
-        };
+      // Sign-in function triggering login via authStore
+      const signInWithGoogle = async () => {
+        loading.value = true;
+        err.value = null;
 
         try {
-          window.opener!.postMessage(payload, this.myOrigin);
+          // Trigger the login from authStore
+          await authStore.login();
+
+          // After successful login, navigate to the next path or home
+          const next = router.currentRoute.value.query.next;
+          const nextPath = Array.isArray(next) ? next[0] : next;
+          router.push((nextPath as string) || '/');
+        } catch {
+          // Handle any error that occurs during login
+          err.value = authStore.err || 'Login failed';
         } finally {
-          setTimeout(() => window.close(), 0);
-          document.body.innerHTML =
-            '<p style="font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:24px; text-align:center;">You can close this window.</p>';
+          loading.value = false;
         }
+      };
 
-        return true;
-      },
-
-      onPopupMessage(e: MessageEvent) {
-        if (e.origin !== this.myOrigin) return;
-        const data = e.data as PopupMessage;
-        if (!data || data.source !== 'oauth-popup' || data.provider !== 'google') return;
-
-        this.gotPopupError = true;
-        this.err = this.toFriendlyMessage(data.error);
-      },
-
-      async signInWithGoogle(
-        onSuccess?: (payload: { idToken: string }) => void,
-        onError?: (e: unknown) => void,
-      ) {
-        if (this.loading) return;
-        this.loading = true;
-        this.err = null;
-        this.gotPopupError = false;
-
-        try {
-          await this.ensureInit();
-
-          const res = await SocialLogin.login({ provider: 'google', options: {} });
-          const idToken = (res.result as GoogleLoginResponseOnline)?.idToken as string | undefined;
-          if (!idToken) throw new Error('No idToken returned from Google');
-
-          // Log id in development mode
-          if (import.meta.env.DEV) {
-            console.log('Google ID Token:', idToken);
-          }
-
-          const r = await fetch(this.verifyUrl, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ credential: idToken, state: this.nextPath }),
-          });
-          if (!r.ok) {
-            const body = await r.text().catch(() => '');
-            throw new Error(`Verify failed: ${r.status} ${body}`);
-          }
-
-          if (onSuccess) onSuccess({ idToken });
-          await this.$router.replace(this.nextPath);
-        } catch (e: unknown) {
-          const raw = (e as Error)?.message || String(e);
-
-          if (this.gotPopupError && /popup closed/i.test(raw)) {
-            // err already set by onPopupMessage
-          } else {
-            this.err = this.toFriendlyMessage(raw);
-          }
-
-          if (onError) onError(e);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      handleSuccess() {
-        console.log('[Auth] Google verified, session established');
-      },
-
-      handleError(e: unknown) {
-        console.error('[Auth] Google sign-in failed', e);
-      },
-    },
-
-    async mounted() {
-      if (this.handlePopupErrorRelay()) return;
-
-      window.addEventListener('message', this.onPopupMessage);
-
-      try {
-        await this.ensureInit();
-      } catch (e) {
-        console.warn('SocialLogin init warning:', e);
-      }
-    },
-
-    beforeUnmount() {
-      window.removeEventListener('message', this.onPopupMessage);
+      return {
+        signInWithGoogle,
+        loading,
+        err,
+      };
     },
   });
 </script>
@@ -198,13 +79,7 @@
     <section class="card">
       <h1 class="title">Sign in</h1>
 
-      <br />
-
-      <button
-        class="gbtn"
-        :disabled="loading"
-        @click="signInWithGoogle(handleSuccess, handleError)"
-      >
+      <button class="gbtn" :disabled="loading" @click="signInWithGoogle">
         <img src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo" />
         <span v-if="!loading">Continue with Google</span>
         <span v-else>Signing in…</span>
@@ -221,22 +96,32 @@
   .auth {
     display: grid;
     place-items: center;
+    min-height: calc(100dvh - 64px);
   }
 
   .card {
     background: #fff;
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px 16px;
+    box-shadow: var(--shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
     width: 80%;
-    max-width: 380px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    max-width: 360px;
     text-align: center;
   }
 
   .title {
-    margin: 0 0 6px;
-    font-size: 24px;
+    margin: 0 0 8px;
     font-weight: 800;
+    font-size: 24px;
+  }
+
+  .sub {
+    margin: 0 0 16px;
+    color: #475569;
+  }
+
+  .gsi-anchor {
+    display: inline-block;
   }
 
   .gbtn {
