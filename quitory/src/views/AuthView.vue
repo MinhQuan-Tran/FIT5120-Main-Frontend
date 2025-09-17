@@ -200,7 +200,6 @@
 <template>
   <main class="auth">
     <section class="card">
-      {{ enviroment }}
       <h1 class="title">Sign in</h1>
 
       <br />
