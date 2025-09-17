@@ -37,10 +37,7 @@
 
       <!-- avatar -->
       <div class="banner-avatar" aria-hidden="true">
-        <img
-          :src="`https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`"
-          alt="User avatar"
-        />
+        <img :src="user?.profilePictureURL" alt="User avatar" />
       </div>
     </section>
 

@@ -57,6 +57,7 @@ const useAuthStore = defineStore('auth', {
             this.user = {
               id: String(user.id),
               name: String(user.name),
+              profilePictureURL: `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`,
             };
 
             console.log('Logged in successfully:', this.user);
