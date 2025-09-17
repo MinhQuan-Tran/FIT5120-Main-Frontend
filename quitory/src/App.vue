@@ -33,6 +33,7 @@
 
     mounted() {
       this.isApp = Capacitor.isNativePlatform();
+      this.auth.init();
     },
   });
 </script>
