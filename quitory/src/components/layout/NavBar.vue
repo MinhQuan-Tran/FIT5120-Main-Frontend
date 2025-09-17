@@ -3,43 +3,38 @@
 </script>
 
 <template>
-  <header>
-    <nav>
-      <RouterLink to="/">
-        <img src="" alt="" />
-        Home
-      </RouterLink>
+  <nav>
+    <RouterLink to="/">
+      <img src="" alt="" />
+      Home
+    </RouterLink>
 
-      <RouterLink to="/journey">
-        <img src="" alt="" />
-        Journey
-      </RouterLink>
+    <RouterLink to="/journey">
+      <img src="" alt="" />
+      Journey
+    </RouterLink>
 
-      <RouterLink to="/group">
-        <img src="" alt="" />
-        Group
-      </RouterLink>
+    <RouterLink to="/group">
+      <img src="" alt="" />
+      Group
+    </RouterLink>
 
-      <RouterLink to="/session">
-        <img src="" alt="" />
-        Session
-      </RouterLink>
+    <RouterLink to="/session">
+      <img src="" alt="" />
+      Session
+    </RouterLink>
 
-      <RouterLink to="/profile">
-        <img src="" alt="" />
-        Profile
-      </RouterLink>
-    </nav>
-  </header>
+    <RouterLink to="/profile">
+      <img src="" alt="" />
+      Profile
+    </RouterLink>
+  </nav>
 </template>
 
 <style scoped>
-  header {
+  nav {
     background: #ffffff;
     padding: 12px 16px;
-  }
-
-  nav {
     display: flex;
     flex-direction: row;
     align-items: center;

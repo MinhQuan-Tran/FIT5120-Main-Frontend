@@ -31,6 +31,11 @@ const useAuthStore = defineStore('auth', {
         const res = await SocialLogin.login({ provider: 'google', options: {} });
         const idToken = (res.result as GoogleLoginResponseOnline).idToken as string | undefined;
 
+        // Log id in development mode
+        if (import.meta.env.DEV) {
+          console.log('Google ID Token:', idToken);
+        }
+
         if (!idToken) throw new Error('No idToken returned from Google');
 
         // Mock the user data for now

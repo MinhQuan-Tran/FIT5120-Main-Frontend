@@ -27,11 +27,14 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
-    // {
-    //   path: '/peer-support',
-    //   name: 'Peer Support',
-    //   component: () => import('@/views/PeerSupportView.vue'),
-    // },
+    {
+      path: '/journey',
+      name: 'Journey',
+      component: () => import('@/views/JourneyView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
     {
       path: '/profile',
       name: 'Profile',
