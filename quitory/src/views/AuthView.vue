@@ -49,12 +49,6 @@
         this.inited = true;
       },
 
-      async resetGoogleSession() {
-        try {
-          await SocialLogin.logout({ provider: 'google' });
-        } catch {}
-      },
-
       parseHashParams(hash: string): Record<string, string> {
         const q = hash.replace(/^#/, '');
         if (!q) return {};
@@ -67,7 +61,6 @@
         return out;
       },
 
-      // Map OAuth/plugin errors → friendly ONE-LINE message
       toFriendlyMessage(codeOrMsg: string): string {
         const code = (codeOrMsg || '').toLowerCase();
 
@@ -135,7 +128,6 @@
 
         try {
           await this.ensureInit();
-          await this.resetGoogleSession(); // optional during debugging
 
           const res = await SocialLogin.login({ provider: 'google', options: {} });
           const idToken = (res.result as GoogleLoginResponseOnline)?.idToken as string | undefined;
@@ -156,11 +148,13 @@
           await this.$router.replace(this.nextPath);
         } catch (e: unknown) {
           const raw = (e as Error)?.message || String(e);
+
           if (this.gotPopupError && /popup closed/i.test(raw)) {
-            // keep the relayed OAuth error already set by onPopupMessage
+            // err already set by onPopupMessage
           } else {
             this.err = this.toFriendlyMessage(raw);
           }
+
           if (onError) onError(e);
         } finally {
           this.loading = false;
@@ -222,7 +216,6 @@
   .auth {
     display: grid;
     place-items: center;
-    min-height: 100dvh;
   }
 
   .card {

@@ -1,15 +1,22 @@
 <script lang="ts">
   import { defineComponent } from 'vue';
   import { RouterView } from 'vue-router';
-  import AppHeader from '@/components/layout/AppHeader.vue';
+  import NavBar from '@/components/layout/NavBar.vue';
   import useAuthStore from '@/stores/authStore';
   import { AuthStatus } from '@/types/user';
+  import { Capacitor } from '@capacitor/core';
 
   export default defineComponent({
     name: 'App',
 
+    data() {
+      return {
+        isApp: false,
+      };
+    },
+
     components: {
-      AppHeader,
+      NavBar,
       RouterView,
     },
 
@@ -18,18 +25,22 @@
         return useAuthStore();
       },
 
-      showHeader(): boolean {
-        return (
-          Boolean(this.$route.meta.requiresAuth) && this.auth.status === AuthStatus.Authenticated
-        );
+      showNavBar(): boolean {
+        // Show navigation bar if authenticated
+        return this.auth.status === AuthStatus.Authenticated;
       },
+    },
+
+    mounted() {
+      this.isApp = Capacitor.isNativePlatform();
     },
   });
 </script>
 
 <template>
-  <AppHeader v-if="showHeader" />
+  <div :style="{ marginTop: isApp ? '40px' : '0' }"></div>
   <RouterView />
+  <NavBar v-if="showNavBar" />
 </template>
 
 <style scoped></style>
