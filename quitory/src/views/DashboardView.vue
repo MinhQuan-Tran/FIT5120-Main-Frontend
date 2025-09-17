@@ -1,10 +1,15 @@
 <script lang="ts">
   import { mapStores } from 'pinia';
+  import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   import useAuthStore from '@/stores/authStore';
   import useGoalStore from '@/stores/goalStore';
 
   export default {
+    components: {
+      PopupNotification,
+    },
+
     data() {
       return {
         progress: 0,
@@ -64,6 +69,18 @@
         </div>
       </div>
     </section>
+
+    <PopupNotification title="Danger Time Alert">
+      <p>You're approaching a high-risk window. Stay strong!</p>
+    </PopupNotification>
+
+    <PopupNotification title="Common Triggers">
+      <div>
+        <span>Stress</span>
+        <span>After meals</span>
+        <span>Work breaks</span>
+      </div>
+    </PopupNotification>
 
     <!-- Goals -->
     <section class="goals" aria-labelledby="goals-title">
