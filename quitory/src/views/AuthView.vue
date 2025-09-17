@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { defineComponent, ref } from 'vue';
+  import { defineComponent, ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import useAuthStore from '@/stores/authStore';
+
+  // TODO: Fix error handling for popup
+  // TODO: Convert to Options API
 
   export default defineComponent({
     name: 'AuthView',
@@ -9,10 +12,39 @@
     setup() {
       const authStore = useAuthStore();
       const router = useRouter();
-
       const loading = ref(false);
       const err = ref<string | null>(null);
 
+      // Function to handle sending error back to the opener (if this is a popup)
+      const handlePopupError = (error: string, errorDescription?: string) => {
+        const isPopup = window.opener && window.opener !== window; // check if it's a popup
+        if (isPopup) {
+          const payload = {
+            source: 'oauth-popup',
+            provider: 'google',
+            ok: false,
+            error: error,
+            error_description: errorDescription,
+          };
+          // Send the error to the parent window
+          window.opener.postMessage(payload, window.location.origin);
+          window.close(); // Close the popup after sending the message
+        }
+      };
+
+      // Check if the URL contains an error from the Google sign-in process
+      onMounted(() => {
+        const urlParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        const error = urlParams.get('error');
+        const state = urlParams.get('state');
+
+        if (error && state === 'popup') {
+          handlePopupError(error, urlParams.get('error_description') ?? undefined);
+          authStore.err = error;
+        }
+      });
+
+      // Sign-in function triggering login via authStore
       const signInWithGoogle = async () => {
         loading.value = true;
         err.value = null;
@@ -46,6 +78,7 @@
   <main class="auth">
     <section class="card">
       <h1 class="title">Sign in</h1>
+      <p class="sub">Continue with Google (redirect, no popup)</p>
 
       <button class="gbtn" :disabled="loading" @click="signInWithGoogle">
         <img src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo" />
@@ -81,6 +114,11 @@
     margin: 0 0 8px;
     font-weight: 800;
     font-size: 24px;
+  }
+
+  .sub {
+    margin: 0 0 16px;
+    color: #475569;
   }
 
   .gsi-anchor {
