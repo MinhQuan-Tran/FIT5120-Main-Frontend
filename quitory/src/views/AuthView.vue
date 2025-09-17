@@ -78,7 +78,6 @@
   <main class="auth">
     <section class="card">
       <h1 class="title">Sign in</h1>
-      <p class="sub">Continue with Google (redirect, no popup)</p>
 
       <button class="gbtn" :disabled="loading" @click="signInWithGoogle">
         <img src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo" />
