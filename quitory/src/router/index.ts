@@ -15,6 +15,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/auth',
+      name: 'Auth',
+      component: () => import('@/views/AuthView.vue'),
+    },
+    {
       path: '/progress',
       name: 'Progress',
       component: () => import('@/views/ProgressView.vue'),
@@ -31,6 +36,9 @@ const router = createRouter({
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/ProfileView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
     },
     // {
     //   path: '/about',
@@ -45,40 +53,38 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   // Base security for project team, teaching team and IMs
-  if (sessionStorage.getItem('isBaseAuthenticated') === 'true') return true;
+  if (sessionStorage.getItem('isBaseAuthenticated') !== 'true') {
+    // Prompt until correct or user cancels
+    for (;;) {
+      const password = prompt('Password:');
+      if (!password) return false; // user hit cancel
 
-  // Prompt until correct or user cancels
-  for (;;) {
-    const password = prompt('Password:');
-    if (!password) return false; // user hit cancel
+      const isValid = await isPasswordValid(
+        password,
+        import.meta.env.VITE_API_BASE_AUTH_PASSWORD as string,
+      );
 
-    const isValid = await isPasswordValid(
-      password,
-      import.meta.env.VITE_API_BASE_AUTH_PASSWORD as string,
-    );
+      if (isValid) {
+        sessionStorage.setItem('isBaseAuthenticated', 'true');
+        alert('Access granted.');
+        break;
+      }
 
-    if (isValid) {
-      sessionStorage.setItem('isBaseAuthenticated', 'true');
-      alert('Access granted.');
-      break;
+      alert('Incorrect password.');
+      // loop again; user can cancel to bail out
     }
-
-    alert('Incorrect password.');
-    // loop again; user can cancel to bail out
   }
 
   // Authentication check
   if (to.meta.requiresAuth) {
     const authStore = useAuthStore();
+
+    console.log('Auth status:', authStore.status);
+
     if (authStore.status === AuthStatus.Unauthenticated) {
-      try {
-        await authStore.login();
-      } catch (error) {
-        console.error('Login failed:', error);
-        return {
-          name: 'Home',
-        };
-      }
+      return {
+        name: 'Auth',
+      };
     }
   }
 

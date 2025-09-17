@@ -1,68 +1,65 @@
 import { defineStore } from 'pinia';
-import api from '@/api';
-
+import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
 import { type User, AuthStatus } from '@/types/user';
 
 const useAuthStore = defineStore('auth', {
   state: () => ({
     account: null as User | null,
-    deviceID: null as string | null,
-    // accessToken: '' as string,
+    loading: false as boolean,
+    err: null as string | null,
   }),
 
   actions: {
     async init() {
-      this.deviceID = localStorage.getItem('deviceID');
-      if (!this.deviceID) {
-        this.deviceID = crypto.randomUUID();
-        localStorage.setItem('deviceID', this.deviceID);
-      }
-
-      this.login();
+      // Initialize social login service (Google for example)
+      await SocialLogin.initialize({
+        google: {
+          webClientId: import.meta.env.VITE_GSI_CLIENT_ID as string,
+          mode: 'online',
+        },
+      });
     },
 
     async login() {
-      if (!this.deviceID) {
-        console.warn('Device ID not found, re-initializing...');
-        return this.init();
-      }
+      if (this.loading) return;
+
+      this.loading = true;
+      this.err = null;
 
       try {
-        const response = await api.user.login({
-          deviceid: this.deviceID,
-          name: 'User1234',
-        });
+        // Sign in using Google
+        const res = await SocialLogin.login({ provider: 'google', options: {} });
+        const idToken = (res.result as GoogleLoginResponseOnline).idToken as string | undefined;
 
+        if (!idToken) throw new Error('No idToken returned from Google');
+
+        // Mock the user data for now
         this.account = {
-          name: response.data.name,
-          profilePictureURL:
-            response.data.profile_picture_url ||
-            `https://ui-avatars.com/api/?name=${response.data.name}&background=3b82f6&color=fff`,
+          name: 'User1234', // Ideally, this would come from your backend
+          profilePictureURL: `https://ui-avatars.com/api/?name=User1234&background=3b82f6&color=fff`,
         };
 
-        // this.accessToken = response.token;
-        console.log('Login successful:', response);
-        return response;
-      } catch (error) {
-        console.error('Login failed:', error);
-        throw error;
+        console.log('Login successful');
+      } catch (e) {
+        this.err = 'Google login failed';
+        console.error('Login failed', e);
+      } finally {
+        this.loading = false;
       }
     },
 
-    // async fetchToken() {
-    //   if (!this.accessToken) throw new Error('Not logged in');
-    //   console.log('Token fetched successfully');
-    //   return this.accessToken;
-    // },
-
-    // async logout() {
-    //   this.account = null;
-    //   // this.accessToken = '';
-    // },
+    logout() {
+      this.account = null;
+      this.err = null;
+      console.log('Logged out successfully');
+    },
   },
 
   getters: {
     status(): AuthStatus {
+      // Ignore auth status during development
+      if (import.meta.env.DEV) return AuthStatus.Authenticated;
+
       return this.account ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
   },

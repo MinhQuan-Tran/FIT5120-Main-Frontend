@@ -4,6 +4,7 @@
 
 <template>
   <div>LandingView</div>
+  <router-link to="/auth">Login</router-link>
 </template>
 
 <style scoped></style>

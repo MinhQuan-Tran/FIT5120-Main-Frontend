@@ -9,7 +9,7 @@
     name: 'HomeGate',
 
     components: {
-      // Landing: defineAsyncComponent(() => import('@/views/LandingView.vue')),
+      Landing: defineAsyncComponent(() => import('@/views/LandingView.vue')),
       Dashboard: defineAsyncComponent(() => import('@/views/DashboardView.vue')),
       Skeleton,
     },
@@ -49,9 +49,8 @@
 
   <Suspense v-else>
     <template #default>
-      <!-- TODO: Update this -->
-      <!-- <component :is="isAuthenticated ? 'Dashboard' : 'Landing'" /> -->
-      <Dashboard></Dashboard>
+      <!-- Render Dashboard if authenticated, otherwise Landing -->
+      <component :is="status === AuthStatus.Authenticated ? 'Dashboard' : 'Landing'" />
     </template>
 
     <!-- Async view fallback -->
