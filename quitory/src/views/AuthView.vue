@@ -28,7 +28,7 @@
           };
           // Send the error to the parent window
           window.opener.postMessage(payload, window.location.origin);
-          window.close(); // Close the popup after sending the message
+          // window.close(); // Close the popup after sending the message
         }
       };
 
