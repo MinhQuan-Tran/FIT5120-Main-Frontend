@@ -69,6 +69,7 @@ const useAuthStore = defineStore('auth', {
             throw apiError;
           });
       } catch (error) {
+        console.error('Google login error:', error);
         this.err = this.getFriendlyErrorMessage(
           error instanceof Error ? error.message : 'Google login failed',
         );
