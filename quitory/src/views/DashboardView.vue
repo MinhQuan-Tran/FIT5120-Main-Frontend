@@ -1,9 +1,9 @@
 <script lang="ts">
   import { mapStores } from 'pinia';
-  import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   import useAuthStore from '@/stores/authStore';
   import useGoalStore from '@/stores/goalStore';
+  import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   export default {
     components: {
@@ -70,15 +70,13 @@
       </div>
     </section>
 
-    <PopupNotification title="Danger Time Alert">
-      <p>You're approaching a high-risk window. Stay strong!</p>
-    </PopupNotification>
-
-    <PopupNotification title="Common Triggers">
-      <div>
-        <span>Stress</span>
-        <span>After meals</span>
-        <span>Work breaks</span>
+    <PopupNotification variant="danger" title="Danger Time Alert">
+      You're approaching a high-risk window. Stay strong!
+      <div class="triggers">
+        <span>Common triggers:</span>
+        <div>Stress</div>
+        <div>After meals</div>
+        <div>Work breaks</div>
       </div>
     </PopupNotification>
 
@@ -129,6 +127,21 @@
 </template>
 
 <style scoped>
+  .triggers {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .triggers > div {
+    background: rgba(255, 0, 0, 0.2);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: inline-block;
+  }
+
   .dashboard-view {
     --start-color: #3b82f6;
     --end-color: #22c55e;
