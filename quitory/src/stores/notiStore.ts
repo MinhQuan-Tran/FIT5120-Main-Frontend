@@ -5,7 +5,7 @@ export type NoticeVariant = 'normal' | 'warning' | 'danger';
 export type Notice = {
   id: string;
   title?: string;
-  content?: HTMLElement;
+  content?: string;
   variant?: NoticeVariant;
   to?: string; // optional link / route / path
   createdAt: number;
@@ -16,13 +16,13 @@ const timeoutMs = 5000; // default display duration
 export const useNotifications = defineStore('notifications', {
   state: () => ({
     items: [] as Notice[],
-    timers: new Map<string, number>(), // id -> timeout handle
-    maxStack: 4,
-    dedupeKeys: new Set<string>(), // optional dedupe support
+    interval: null as number | null,
   }),
 
   getters: {
-    list: (s) => s.items,
+    currentNotice(state): Notice | null {
+      return state.items.length > 0 ? state.items[0] : null;
+    },
   },
 
   actions: {
@@ -35,37 +35,20 @@ export const useNotifications = defineStore('notifications', {
         ...info,
       };
 
-      // keep stack small (FIFO)
-      if (this.items.length >= this.maxStack) {
-        const removed = this.items.shift();
-        if (removed) this._clearTimer(removed.id);
-      }
-
       this.items.push(n);
 
-      const handle = window.setTimeout(() => this.close(id), timeoutMs);
-      this.timers.set(id, handle);
+      if (this.items.length === 1) {
+        this.interval = window.setInterval(() => {
+          this.items.shift();
+
+          if (this.items.length === 0) {
+            clearInterval(this.interval!);
+            this.interval = null;
+          }
+        }, timeoutMs);
+      }
 
       return id;
-    },
-
-    close(id: string) {
-      this.items = this.items.filter((n) => n.id !== id);
-      this._clearTimer(id);
-    },
-
-    clearAll() {
-      for (const n of this.items) this._clearTimer(n.id);
-      this.items = [];
-      this.dedupeKeys.clear();
-    },
-
-    _clearTimer(id: string) {
-      const handle = this.timers.get(id);
-      if (handle) {
-        clearTimeout(handle);
-        this.timers.delete(id);
-      }
     },
   },
 });
