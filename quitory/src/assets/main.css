@@ -58,6 +58,14 @@ section {
 button {
   all: unset;
   cursor: pointer;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background-color: #f3f4f6;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 progress {

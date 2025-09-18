@@ -106,7 +106,7 @@ const useAuthStore = defineStore('auth', {
   getters: {
     status(): AuthStatus {
       // Ignore auth status during development
-      // if (import.meta.env.DEV) return AuthStatus.Authenticated;
+      if (import.meta.env.DEV) return AuthStatus.Authenticated;
 
       return this.user ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
