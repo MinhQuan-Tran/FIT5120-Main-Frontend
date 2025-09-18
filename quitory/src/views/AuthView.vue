@@ -39,8 +39,8 @@
         const state = urlParams.get('state');
 
         if (error && state === 'popup') {
-          handlePopupError(error, urlParams.get('error_description') ?? undefined);
           authStore.err = error;
+          handlePopupError(error, urlParams.get('error_description') ?? undefined);
         }
       });
 
