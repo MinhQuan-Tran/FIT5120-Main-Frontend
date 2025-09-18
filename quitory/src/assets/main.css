@@ -68,6 +68,10 @@ button {
   box-sizing: border-box;
 }
 
+p {
+  margin: 0;
+}
+
 progress {
   -webkit-appearance: none;
   appearance: none;

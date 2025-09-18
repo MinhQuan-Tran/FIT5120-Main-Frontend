@@ -5,8 +5,8 @@
 <template>
   <main>
     <div class="banner">
-      <h1>Distract Me</h1>
-      <p>Take some activities to ride out your craving</p>
+      <h1 class="title">Distract Me</h1>
+      <p class="sub">Take some activities to ride out your craving</p>
     </div>
 
     <div class="activity">
@@ -32,7 +32,15 @@
       Try Another Activity
     </button>
 
-    <button class="end-button" @click="$router.push('/session')">It's Over</button>
+    <button class="end-button" @click="$router.push('/cravings/log')">
+      <img
+        width="24"
+        height="24"
+        src="https://img.icons8.com/ios-glyphs/30/FFFFFF/checkmark--v1.png"
+        alt="checkmark--v1"
+      />
+      It's Over
+    </button>
   </main>
 </template>
 
@@ -48,19 +56,23 @@
     margin: 0 var(--padding);
   }
 
-  p {
-    margin: 0;
-  }
-
   .banner {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: var(--padding);
     text-align: center;
     padding: 20px;
     background: linear-gradient(90deg, #6366f1, #9333ea);
+  }
+
+  .banner .title {
     color: white;
+  }
+
+  .banner .sub {
+    color: rgb(255, 255, 255, 0.8);
   }
 
   .activity {
@@ -90,8 +102,9 @@
     margin: 24px 0;
   }
 
-  .activity-button {
-    gap: 4px;
+  .activity-button,
+  .end-button {
+    gap: 8px;
   }
 
   .activity-button:hover img {
