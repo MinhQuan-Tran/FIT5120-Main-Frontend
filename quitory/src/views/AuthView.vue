@@ -34,10 +34,9 @@
 
       // Check if the URL contains an error from the Google sign-in process
       onMounted(() => {
-        const urlParams = new URLSearchParams(window.location.hash.replace('#', ''));
-        const error = urlParams.get('error');
-        const state = urlParams.get('state');
-
+        // const urlParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        // const error = urlParams.get('error');
+        // const state = urlParams.get('state');
         // if (error && state === 'popup') {
         //   authStore.err = error;
         //   handlePopupError(error, urlParams.get('error_description') ?? undefined);
