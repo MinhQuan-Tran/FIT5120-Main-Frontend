@@ -126,13 +126,7 @@
 
   .gbtn {
     margin: auto;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    background: #fff;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
+    font-weight: bold;
   }
 
   .gbtn img {

@@ -36,6 +36,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/session',
+      name: 'Session',
+      component: () => import('@/views/SessionView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/ProfileView.vue'),
@@ -43,14 +51,11 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
-    // {
-    //   path: '/about',
-    //   name: 'about',
-    //   // route level code-splitting
-    //   // this generates a separate chunk (About.[hash].js) for this route
-    //   // which is lazy-loaded when the route is visited.
-    //   component: () => import('@/views/AboutView.vue'),
-    // },
+    {
+      path: '/help-me-now',
+      name: 'HelpMeNow',
+      component: () => import('@/views/HelpMeNowView.vue'),
+    },
   ],
 });
 
