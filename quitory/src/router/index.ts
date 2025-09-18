@@ -56,6 +56,14 @@ const router = createRouter({
       name: 'HelpMeNow',
       component: () => import('@/views/HelpMeNowView.vue'),
     },
+    {
+      path: '/cravings/log',
+      name: 'CravingLog',
+      component: () => import('@/views/CravingLogView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
 });
 
