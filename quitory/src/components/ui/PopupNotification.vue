@@ -1,72 +1,136 @@
 <script lang="ts">
-  export default {
+  import { defineComponent, type PropType } from 'vue';
+
+  type Variant = 'normal' | 'warning' | 'danger';
+
+  export default defineComponent({
     name: 'PopupNotification',
 
     props: {
-      title: {
-        type: String,
-        required: true,
+      variant: {
+        type: String as PropType<Variant>,
+        default: 'normal',
       },
     },
-  };
+
+    emits: ['close'],
+
+    computed: {
+      role(): 'status' | 'alert' {
+        return this.variant === 'danger' || this.variant === 'warning' ? 'alert' : 'status';
+      },
+
+      classes(): Record<string, boolean> {
+        return {
+          notice: true,
+          'is-danger': this.variant === 'danger',
+          'is-warning': this.variant === 'warning',
+          'is-normal': this.variant === 'normal',
+        };
+      },
+
+      iconFallback(): string {
+        if (this.variant === 'danger') return '⚠️';
+        if (this.variant === 'warning') return '💡';
+        return 'ℹ️';
+      },
+    },
+
+    methods: {
+      onClose(): void {
+        this.$emit('close');
+      },
+    },
+  });
 </script>
 
 <template>
-  <div>
-    <section class="popup-notification">
-      <div class="icon">
-        <!-- You can replace this with an actual icon -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="feather feather-bell"
-        >
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-      </div>
-      <div class="content">
-        <p class="title">{{ title }}</p>
-        <slot></slot>
-      </div>
-    </section>
+  <div :class="classes" :role="role" aria-live="polite">
+    <div class="icon" aria-hidden="true">
+      <slot name="icon">{{ iconFallback }}</slot>
+    </div>
+
+    <div class="content">
+      <slot></slot>
+    </div>
   </div>
 </template>
 
 <style scoped>
-  .popup-notification {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  /* Base */
+  .notice {
+    --bg: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --icon: #6b7280;
+
     display: flex;
-    padding: 16px;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   }
 
-  .popup-notification .icon {
-    width: 24px;
-    height: 24px;
-    background-color: #007bff;
-    border-radius: 50%;
-    margin-right: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Variants */
+  .is-danger {
+    --bg: #fef2f2;
+    --border: #fecaca;
+    --text: #991b1b;
+    --icon: #dc2626;
   }
 
-  .popup-notification .content {
+  .is-warning {
+    --bg: #fffbeb;
+    --border: #fde68a;
+    --text: #92400e;
+    --icon: #d97706;
+  }
+
+  .is-normal {
+    --bg: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --icon: #6b7280;
+  }
+
+  /* Parts */
+  .icon {
+    font-size: 18px;
+    line-height: 1;
+    margin-top: 2px;
+    color: var(--icon);
+  }
+
+  .content {
     flex: 1;
+    min-width: 0;
   }
 
-  .popup-notification .title {
-    font-weight: bold;
-    margin: 0 0 8px 0;
+  .close {
+    margin-left: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    opacity: 0.75;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .close:focus-visible {
+    outline: 2px solid var(--icon);
+    outline-offset: 2px;
   }
 </style>
