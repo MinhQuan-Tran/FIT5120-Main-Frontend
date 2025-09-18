@@ -89,7 +89,7 @@ const useAuthStore = defineStore('auth', {
       const code = (codeOrMsg || '').toLowerCase();
 
       if (code.includes('access_denied')) return 'Sign-in was cancelled.';
-      if (code.includes('popup closed')) return 'Sign-in window was closed.';
+      // if (code.includes('popup closed')) return 'Sign-in window was closed.';
       if (code.includes('interaction_required')) return 'Action needed to continue.';
       if (code.includes('login_required')) return 'Please sign in to Google first.';
       if (code.includes('consent_required')) return 'Permission required.';

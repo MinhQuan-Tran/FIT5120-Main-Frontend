@@ -38,10 +38,10 @@
         const error = urlParams.get('error');
         const state = urlParams.get('state');
 
-        if (error && state === 'popup') {
-          authStore.err = error;
-          handlePopupError(error, urlParams.get('error_description') ?? undefined);
-        }
+        // if (error && state === 'popup') {
+        //   authStore.err = error;
+        //   handlePopupError(error, urlParams.get('error_description') ?? undefined);
+        // }
       });
 
       // Sign-in function triggering login via authStore
