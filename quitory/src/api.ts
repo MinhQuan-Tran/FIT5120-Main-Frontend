@@ -1,7 +1,7 @@
 import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today';
+type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today' | 'summary';
 type QueryParams = Record<string, string | number | boolean>;
 
 interface RequestOptions {
@@ -73,6 +73,12 @@ const api = {
   goal: {
     async today() {
       return createRequest('goals/today', { method: 'GET' });
+    },
+  },
+
+  summary: {
+    async fetch() {
+      return createRequest('summary', { method: 'GET' });
     },
   },
 };
