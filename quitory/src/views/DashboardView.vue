@@ -1,8 +1,8 @@
 <script lang="ts">
   import { mapStores } from 'pinia';
+  import api from '@/api';
 
   import useAuthStore from '@/stores/authStore';
-  import useGoalStore from '@/stores/goalStore';
   import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   export default {
@@ -13,11 +13,26 @@
     data() {
       return {
         progress: 0,
+        moneySaved: 0,
+        hoursRegained: 0,
+        targets: [] as Array<{ label: string; value: number; completed: boolean }>,
       };
     },
 
+    methods: {
+      async fetchSummary() {
+        try {
+          const response = await api.summary.fetch();
+          this.moneySaved = response.data.money_saved;
+          this.hoursRegained = response.data.hours_regained;
+        } catch (error) {
+          console.error('Error fetching summary:', error);
+        }
+      },
+    },
+
     computed: {
-      ...mapStores(useAuthStore, useGoalStore),
+      ...mapStores(useAuthStore),
       user() {
         return useAuthStore().user;
       },
@@ -27,6 +42,13 @@
       setTimeout(() => {
         this.progress = 76;
       }, 1500);
+
+      this.targets = [
+        { label: 'Time wasted on vaping', value: 1, completed: false },
+        { label: 'Money spent on vaping', value: 1, completed: false },
+        { label: 'Number of vapes', value: 1, completed: false },
+        { label: 'Stay vape-free', value: 1, completed: false },
+      ];
     },
   };
 </script>
@@ -60,11 +82,11 @@
 
       <div class="summary-stats">
         <div class="stat stat-green">
-          <div class="stat-value">$184</div>
+          <div class="stat-value">${{ moneySaved }}</div>
           <div class="stat-label">Money Saved</div>
         </div>
         <div class="stat stat-blue">
-          <div class="stat-value">552</div>
+          <div class="stat-value">{{ hoursRegained }}</div>
           <div class="stat-label">Hours Regained</div>
         </div>
       </div>
@@ -80,46 +102,19 @@
       </div>
     </PopupNotification>
 
-    <!-- Goals -->
-    <section class="goals" aria-labelledby="goals-title">
-      <div class="goals-header">
-        <b id="goals-title" class="section-title">Today's Goals</b>
+    <!-- targets -->
+    <section class="targets" aria-labelledby="targets-title">
+      <div class="targets-header">
+        <b id="targets-title" class="section-title">Today's targets</b>
       </div>
 
       <br />
 
-      <div class="goals-list">
-        <!-- Completed -->
-        <label class="goal-item">
-          <input type="checkbox" checked />
+      <div class="targets-list">
+        <label v-for="target in targets" :key="target.label" class="goal-item">
+          <input type="checkbox" v-model="target.completed" />
           <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">Drink 8 glasses of water</span>
-        </label>
-
-        <!-- Completed -->
-        <label class="goal-item">
-          <input type="checkbox" checked />
-          <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">10-minute walk</span>
-        </label>
-
-        <!-- Not completed -->
-        <label class="goal-item">
-          <input type="checkbox" />
-          <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">Practice deep breathing</span>
-        </label>
-
-        <label class="goal-item">
-          <input type="checkbox" />
-          <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">Read for 20 minutes</span>
-        </label>
-
-        <label v-for="goal in goalStore.todayGoals" :key="goal.id" class="goal-item">
-          <input type="checkbox" v-model="goal.completed" />
-          <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">{{ goal.text }}</span>
+          <span class="goal-text">{{ target.label }}</span>
         </label>
       </div>
     </section>
@@ -253,15 +248,15 @@
     margin-top: 4px;
   }
 
-  /* ---------- Goals (match mock) ---------- */
-  .goals {
+  /* ---------- targets (match mock) ---------- */
+  .targets {
     background: #ffffff;
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 8px 24px rgba(2, 6, 23, 0.06);
   }
 
-  .goals-list {
+  .targets-list {
     display: grid;
     gap: 12px;
   }
