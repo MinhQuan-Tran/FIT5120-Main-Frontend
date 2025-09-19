@@ -76,17 +76,17 @@
 
       <section class="activity-log">
         <h2 class="title">Which activities where effective?</h2>
-        <label for="stress">
-          <span>Stress</span>
-          <input type="checkbox" name="stress" id="stress" />
+        <label for="1">
+          <span>Go for a walk</span>
+          <input type="checkbox" name="1" id="1" />
         </label>
-        <label for="social">
-          <span>Social</span>
-          <input type="checkbox" name="social" id="social" />
+        <label for="2">
+          <span>Listen to music</span>
+          <input type="checkbox" name="2" id="2" />
         </label>
-        <label for="eating">
-          <span>Eating</span>
-          <input type="checkbox" name="eating" id="eating" />
+        <label for="3">
+          <span>Take deep breaths</span>
+          <input type="checkbox" name="3" id="3" />
         </label>
       </section>
 
