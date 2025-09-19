@@ -13,20 +13,27 @@
     data() {
       return {
         progress: 0,
+        timeWasted: 0,
         moneySaved: 0,
-        hoursRegained: 0,
         targets: [] as Array<{ label: string; value: number; completed: boolean }>,
       };
     },
 
     methods: {
-      async fetchSummary() {
+      async fetchTrackers() {
+        console.log('Fetching trackers...');
+
         try {
-          const response = await api.summary.fetch();
+          const response = await api.insights.trackers.fetch();
+
+          if (import.meta.env.DEV) {
+            console.log('Trackers response:', response);
+          }
+
+          this.timeWasted = response.data.time_wasted;
           this.moneySaved = response.data.money_saved;
-          this.hoursRegained = response.data.hours_regained;
         } catch (error) {
-          console.error('Error fetching summary:', error);
+          console.error('Error fetching trackers:', error);
         }
       },
     },
@@ -42,6 +49,8 @@
       setTimeout(() => {
         this.progress = 76;
       }, 1500);
+
+      this.fetchTrackers();
 
       this.targets = [
         { label: 'Time wasted on vaping', value: 1, completed: false },
@@ -85,9 +94,10 @@
           <div class="stat-value">${{ moneySaved }}</div>
           <div class="stat-label">Money Saved</div>
         </div>
+        <!-- TODO: Time saved -->
         <div class="stat stat-blue">
-          <div class="stat-value">{{ hoursRegained }}</div>
-          <div class="stat-label">Hours Regained</div>
+          <div class="stat-value">{{ timeWasted }}</div>
+          <div class="stat-label">Time Wasted</div>
         </div>
       </div>
     </section>

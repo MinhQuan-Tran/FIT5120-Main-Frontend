@@ -1,7 +1,6 @@
 import useAuthStore from '@/stores/authStore';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-type ApiResource = 'auth/login' | 'auth/currentUser' | 'goals/today' | 'summary';
 type QueryParams = Record<string, string | number | boolean>;
 
 interface RequestOptions {
@@ -10,7 +9,7 @@ interface RequestOptions {
   queryParams?: QueryParams;
 }
 
-function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
+function buildUrl(resource: string, queryParams?: QueryParams): string {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const baseUrl = `${apiBaseUrl}/${resource}`;
   if (!queryParams) return baseUrl;
@@ -26,7 +25,7 @@ function buildUrl(resource: ApiResource, queryParams?: QueryParams): string {
   return `${baseUrl}?${searchParams.toString()}`;
 }
 
-async function createRequest(resource: ApiResource, options: RequestOptions) {
+async function createRequest(resource: string, options: RequestOptions) {
   const authStore = useAuthStore();
   const token = await authStore.fetchToken();
 
@@ -70,15 +69,26 @@ const api = {
     },
   },
 
-  goal: {
-    async today() {
-      return createRequest('goals/today', { method: 'GET' });
+  insights: {
+    sessions: {
+      async pattern(types: string[]) {
+        return createRequest('insights/sessions/pattern', {
+          method: 'GET',
+          queryParams: { types: types.join(',') },
+        });
+      },
     },
-  },
 
-  summary: {
-    async fetch() {
-      return createRequest('summary', { method: 'GET' });
+    dangerTime: {
+      async next() {
+        return createRequest('insights/danger-time/next', { method: 'GET' });
+      },
+    },
+
+    trackers: {
+      async fetch() {
+        return createRequest('insights/trackers', { method: 'GET' });
+      },
     },
   },
 };
