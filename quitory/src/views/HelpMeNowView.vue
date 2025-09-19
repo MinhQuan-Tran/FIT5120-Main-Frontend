@@ -14,8 +14,8 @@
         <img
           width="96"
           height="96"
-          src="https://img.icons8.com/fluency/96/musical-notes.png"
-          alt="musical-notes"
+          src="https://img.icons8.com/fluency/96/walking.png"
+          alt="walking"
         />
         <h2>Go for a walk</h2>
         <p>Physical activity can help reduce cravings and improve your mood.</p>
@@ -48,6 +48,7 @@
   main {
     background-color: white;
     padding: 0;
+    padding-bottom: var(--padding);
     display: flex;
     flex-direction: column;
   }
@@ -97,7 +98,7 @@
   }
 
   .activity img {
-    background: linear-gradient(135deg, #b39aff, #ff8ec8);
+    background: white;
     border-radius: var(--radius);
     margin: 24px 0;
   }
