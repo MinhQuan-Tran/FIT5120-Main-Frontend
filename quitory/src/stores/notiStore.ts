@@ -13,7 +13,7 @@ export type Notice = {
 
 const timeoutMs = 5000; // default display duration
 
-export const useNotifications = defineStore('notifications', {
+export const useNotificationStore = defineStore('notifications', {
   state: () => ({
     items: [] as Notice[],
     interval: null as number | null,

@@ -1,5 +1,58 @@
 <script lang="ts">
-  export default {};
+  import api from '@/api';
+  import { mapStores } from 'pinia';
+
+  import { useHelpMeNowStore } from '@/stores/helpMeNowStore';
+  import { type DistractionActivity } from '@/types/distraction';
+
+  export default {
+    name: 'HelpMeNowView',
+
+    data() {
+      return {
+        name: 'Loading...',
+        description: 'Please wait while we find an activity for you.',
+      };
+    },
+
+    computed: {
+      ...mapStores(useHelpMeNowStore),
+    },
+
+    methods: {
+      async fetchActivity() {
+        this.name = 'Loading...';
+        this.description = 'Please wait while we find an activity for you.';
+
+        try {
+          const response = await api.distraction.actions.random();
+
+          // Map API → local shape
+          const activity = {
+            id: response.data.id ?? undefined,
+            name: String(response.data.activity_name ?? 'Activity'),
+            description: String(response.data.activity_description ?? ''),
+          };
+
+          // Update UI
+          this.name = activity.name;
+          this.description = activity.description;
+
+          // Persist to store for the next screen
+          this.helpMeNowStore.push(activity as DistractionActivity);
+        } catch (e: unknown) {
+          this.name = 'Something went wrong';
+          this.description =
+            e instanceof Error && e.message ? e.message : 'Please try again later.';
+        }
+      },
+    },
+
+    mounted() {
+      this.helpMeNowStore.clear();
+      this.fetchActivity();
+    },
+  };
 </script>
 
 <template>
@@ -17,12 +70,12 @@
           src="https://img.icons8.com/fluency/96/walking.png"
           alt="walking"
         />
-        <h2>Go for a walk</h2>
-        <p>Physical activity can help reduce cravings and improve your mood.</p>
+        <h2>{{ name }}</h2>
+        <p>{{ description }}</p>
       </div>
     </div>
 
-    <button class="activity-button">
+    <button class="activity-button" @click="fetchActivity">
       <img
         width="24"
         height="24"

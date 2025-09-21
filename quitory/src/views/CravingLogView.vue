@@ -1,6 +1,9 @@
 <script lang="ts">
   import VapingLogView from '@/views/VapingLogView.vue';
 
+  import { useHelpMeNowStore } from '@/stores/helpMeNowStore';
+  import { mapStores } from 'pinia';
+
   export default {
     name: 'CravingLogView',
 
@@ -11,14 +14,32 @@
     data() {
       return {
         vaped: null as boolean | null,
-        startTime: new Date(),
+        startTime: null as Date | null,
+        activities: [] as {
+          id: string;
+          name: string;
+          effective: boolean;
+        }[],
       };
+    },
+
+    computed: {
+      ...mapStores(useHelpMeNowStore),
     },
 
     methods: {
       handleSubmit() {
         alert('Submitted!');
       },
+    },
+
+    mounted() {
+      this.startTime = this.helpMeNowStore.startTime;
+      this.activities = this.helpMeNowStore.activities.map((a) => ({
+        id: a.id,
+        name: a.name,
+        effective: false,
+      }));
     },
   };
 </script>
@@ -76,17 +97,14 @@
 
       <section class="activity-log">
         <h2 class="title">Which activities where effective?</h2>
-        <label for="1">
-          <span>Go for a walk</span>
-          <input type="checkbox" name="1" id="1" />
-        </label>
-        <label for="2">
-          <span>Listen to music</span>
-          <input type="checkbox" name="2" id="2" />
-        </label>
-        <label for="3">
-          <span>Take deep breaths</span>
-          <input type="checkbox" name="3" id="3" />
+        <label v-for="activity in activities" :key="activity.id" :for="activity.id">
+          <span>{{ activity.name }}</span>
+          <input
+            type="checkbox"
+            name="activity.id"
+            :id="activity.id"
+            v-model="activity.effective"
+          />
         </label>
       </section>
 

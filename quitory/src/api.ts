@@ -69,6 +69,14 @@ const api = {
     },
   },
 
+  distraction: {
+    actions: {
+      async random() {
+        return createRequest('distraction/actions/random', { method: 'GET' });
+      },
+    },
+  },
+
   insights: {
     sessions: {
       async pattern(types: string[]) {

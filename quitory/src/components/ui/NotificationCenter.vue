@@ -1,13 +1,13 @@
 <script lang="ts">
   import { defineComponent } from 'vue';
-  import { useNotifications } from '@/stores/notiStore';
+  import { useNotificationStore } from '@/stores/notiStore';
   import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   export default defineComponent({
     name: 'NotificationCenter',
     components: { PopupNotification },
     setup() {
-      const store = useNotifications();
+      const store = useNotificationStore();
       return { store };
     },
 
