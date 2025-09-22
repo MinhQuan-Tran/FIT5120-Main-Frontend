@@ -47,7 +47,7 @@
             },
           })
           .then((data: { code: number; message: string }) => {
-            console.log('Response data:', data);
+            if (import.meta.env.DEV) console.log('Response data:', data);
 
             if (!data || data.code !== 200) {
               throw new Error(data?.message || 'Unknown error');
@@ -150,7 +150,7 @@
           <span>{{ activity.name }}</span>
           <input
             type="checkbox"
-            name="activity.id"
+            :name="activity.id"
             :id="activity.id"
             v-model="activity.effective"
           />

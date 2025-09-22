@@ -21,14 +21,12 @@
 
     methods: {
       async fetchTrackers() {
-        console.log('Fetching trackers...');
+        if (import.meta.env.DEV) console.log('Fetching trackers...');
 
         try {
           const response = await api.insights.trackers.fetch();
 
-          if (import.meta.env.DEV) {
-            console.log('Trackers response:', response);
-          }
+          if (import.meta.env.DEV) console.log('Trackers response:', response);
 
           this.timeWasted = response.data.time_wasted;
           this.moneySaved = response.data.money_saved;

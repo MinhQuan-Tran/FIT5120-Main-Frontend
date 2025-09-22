@@ -46,7 +46,7 @@ const useAuthStore = defineStore('authentication', {
         await api.user
           .login()
           .then((data) => {
-            console.log('Login API response:', data);
+            if (import.meta.env.DEV) console.log('Login API response:', data);
 
             const user = data.data;
 
@@ -60,7 +60,7 @@ const useAuthStore = defineStore('authentication', {
               profilePictureURL: `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`,
             };
 
-            console.log('Logged in successfully:', this.user);
+            if (import.meta.env.DEV) console.log('Logged in successfully:', this.user);
 
             this.loading = false;
           })
@@ -81,7 +81,7 @@ const useAuthStore = defineStore('authentication', {
       this.user = null;
       this.idToken = null;
       this.err = null;
-      console.log('Logged out successfully');
+      if (import.meta.env.DEV) console.log('Logged out successfully');
     },
 
     // Function to map error codes to user-friendly messages

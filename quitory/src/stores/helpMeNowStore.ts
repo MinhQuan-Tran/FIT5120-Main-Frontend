@@ -30,7 +30,7 @@ export const useHelpMeNowStore = defineStore('helpMeNow', {
       }
       this._save();
 
-      console.log(this.activities);
+      if (import.meta.env.DEV) console.log(this.activities);
     },
 
     start() {
