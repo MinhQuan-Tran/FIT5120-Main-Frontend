@@ -4,7 +4,7 @@ import api from '@/api';
 
 import { type User, AuthStatus } from '@/types/user';
 
-const useAuthStore = defineStore('auth', {
+const useAuthStore = defineStore('authentication', {
   state: () => ({
     user: null as User | null,
     idToken: null as string | null,

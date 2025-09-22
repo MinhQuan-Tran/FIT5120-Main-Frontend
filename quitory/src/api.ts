@@ -69,6 +69,23 @@ const api = {
     },
   },
 
+  sessions: {
+    async createCravingLog(data: {
+      startTime: Date;
+      duration: number;
+      triggers: string[];
+      activities: {
+        effective: string[];
+        ineffective: string[];
+      };
+    }) {
+      return createRequest('sessions/craving', {
+        method: 'POST',
+        body: data,
+      });
+    },
+  },
+
   distraction: {
     actions: {
       async random() {

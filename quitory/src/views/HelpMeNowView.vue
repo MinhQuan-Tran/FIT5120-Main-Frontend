@@ -46,10 +46,15 @@
             e instanceof Error && e.message ? e.message : 'Please try again later.';
         }
       },
+
+      handleEnd() {
+        this.helpMeNowStore.end();
+        this.$router.push({ name: 'CravingLog' });
+      },
     },
 
     mounted() {
-      this.helpMeNowStore.clear();
+      this.helpMeNowStore.start();
       this.fetchActivity();
     },
   };
@@ -85,7 +90,7 @@
       Try Another Activity
     </button>
 
-    <button class="end-button" @click="$router.push('/cravings/log')">
+    <button class="end-button" @click="handleEnd">
       <img
         width="24"
         height="24"

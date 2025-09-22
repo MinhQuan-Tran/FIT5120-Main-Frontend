@@ -7,7 +7,8 @@ const MAX_KEEP = 50; // cap to avoid unbounded growth
 
 export const useHelpMeNowStore = defineStore('helpMeNow', {
   state: () => ({
-    startTime: new Date(),
+    startTime: null as Date | null,
+    duration: 0, // minutes
     activities: [] as DistractionActivity[],
   }),
 
@@ -32,7 +33,23 @@ export const useHelpMeNowStore = defineStore('helpMeNow', {
       console.log(this.activities);
     },
 
+    start() {
+      this.startTime = new Date();
+      this.duration = 0;
+      this.activities = [];
+      this._save();
+    },
+
+    end() {
+      if (this.startTime === null) return;
+
+      this.duration = Math.floor((Date.now() - this.startTime.getTime()) / 60000); // minutes
+      this._save();
+    },
+
     clear() {
+      this.startTime = null;
+      this.duration = 0;
       this.activities = [];
       this._save();
     },
