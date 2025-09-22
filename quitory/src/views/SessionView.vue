@@ -1,5 +1,7 @@
 <script lang="ts">
-  export default {};
+  export default {
+    name: 'SessionView',
+  };
 </script>
 
 <template>

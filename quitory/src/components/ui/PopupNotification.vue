@@ -1,19 +1,23 @@
 <script lang="ts">
   import { defineComponent, type PropType } from 'vue';
 
-  type Variant = 'normal' | 'warning' | 'danger';
+  import type { NoticeVariant } from '@/types/notification';
 
   export default defineComponent({
     name: 'PopupNotification',
 
     props: {
+      title: {
+        type: String,
+        required: false,
+        default: null,
+      },
+
       variant: {
-        type: String as PropType<Variant>,
+        type: String as PropType<NoticeVariant>,
         default: 'normal',
       },
     },
-
-    emits: ['close'],
 
     computed: {
       role(): 'status' | 'alert' {
@@ -26,19 +30,15 @@
           'is-danger': this.variant === 'danger',
           'is-warning': this.variant === 'warning',
           'is-normal': this.variant === 'normal',
+          'is-success': this.variant === 'success',
         };
       },
 
       iconFallback(): string {
+        if (this.variant === 'success') return '✅';
         if (this.variant === 'danger') return '⚠️';
         if (this.variant === 'warning') return '💡';
         return 'ℹ️';
-      },
-    },
-
-    methods: {
-      onClose(): void {
-        this.$emit('close');
       },
     },
   });
@@ -50,8 +50,11 @@
       <slot name="icon">{{ iconFallback }}</slot>
     </div>
 
-    <div class="content">
-      <slot></slot>
+    <div class="content-wrapper">
+      <span v-if="title" class="title">{{ title }}</span>
+      <div class="content">
+        <slot></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -98,12 +101,32 @@
     --icon: #6b7280;
   }
 
+  .is-success {
+    --bg: #ecfdf5;
+    --border: #6ee7b7;
+    --text: #065f46;
+    --icon: #10b981;
+  }
+
   /* Parts */
   .icon {
     font-size: 18px;
     line-height: 1;
     margin-top: 2px;
     color: var(--icon);
+  }
+
+  .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .title {
+    font-weight: bold;
+    height: 18px;
   }
 
   .content {

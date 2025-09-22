@@ -1,19 +1,10 @@
 import { defineStore } from 'pinia';
 
-export type NoticeVariant = 'normal' | 'warning' | 'danger';
-
-export type Notice = {
-  id: string;
-  title?: string;
-  content?: string;
-  variant?: NoticeVariant;
-  to?: string; // optional link / route / path
-  createdAt: number;
-};
+import type { Notice } from '@/types/notification';
 
 const timeoutMs = 5000; // default display duration
 
-export const useNotifications = defineStore('notifications', {
+export const useNotiStore = defineStore('notification', {
   state: () => ({
     items: [] as Notice[],
     interval: null as number | null,

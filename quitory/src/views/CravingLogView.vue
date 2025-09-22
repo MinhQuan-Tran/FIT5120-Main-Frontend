@@ -1,5 +1,11 @@
 <script lang="ts">
+  import api from '@/api';
+  import { mapStores } from 'pinia';
+
   import VapingLogView from '@/views/VapingLogView.vue';
+
+  import { useHelpMeNowStore } from '@/stores/helpMeNowStore';
+  import { useNotiStore } from '@/stores/notiStore';
 
   export default {
     name: 'CravingLogView',
@@ -11,14 +17,74 @@
     data() {
       return {
         vaped: null as boolean | null,
-        startTime: new Date(),
+        activities: [] as {
+          id: string;
+          name: string;
+          effective: boolean;
+        }[],
       };
+    },
+
+    computed: {
+      ...mapStores(useHelpMeNowStore, useNotiStore),
     },
 
     methods: {
       handleSubmit() {
-        alert('Submitted!');
+        if (this.helpMeNowStore.startTime === null) {
+          alert('Start time is missing. Please go back and try again.');
+          return;
+        }
+
+        api.sessions
+          .createCravingLog({
+            startTime: this.helpMeNowStore.startTime,
+            duration: this.helpMeNowStore.duration,
+            triggers: [],
+            activities: {
+              effective: this.activities.filter((a) => a.effective).map((a) => a.id),
+              ineffective: this.activities.filter((a) => !a.effective).map((a) => a.id),
+            },
+          })
+          .then((data: { code: number; message: string }) => {
+            if (import.meta.env.DEV) console.log('Response data:', data);
+
+            if (!data || data.code !== 200) {
+              throw new Error(data?.message || 'Unknown error');
+            }
+
+            // Reset state
+            this.vaped = null;
+            this.activities = [];
+            this.helpMeNowStore.clear();
+
+            // Notify user
+            this.notificationStore.push({
+              title: 'Success',
+              content: 'Craving session logged successfully!',
+              variant: 'success',
+            });
+
+            // Navigate to home
+            this.$router.push({ name: 'Home' });
+          })
+          .catch((e: unknown) => {
+            const message = e instanceof Error && e.message ? e.message : 'Please try again later.';
+            this.notificationStore.push({
+              title: 'Error',
+              content: `Failed to log craving session: ${message}`,
+              variant: 'danger',
+            });
+          });
       },
+    },
+
+    mounted() {
+      this.activities = this.helpMeNowStore.activities.map((a) => ({
+        id: a.id,
+        name: a.name,
+        effective: false,
+      }));
     },
   };
 </script>
@@ -71,22 +137,23 @@
           }}
         </div>
 
-        <VapingLogView v-if="vaped === true" class="vaping-log" :startTime="startTime" />
+        <VapingLogView
+          v-if="vaped === true"
+          class="vaping-log"
+          :startTime="helpMeNowStore.startTime"
+        />
       </section>
 
       <section class="activity-log">
         <h2 class="title">Which activities where effective?</h2>
-        <label for="1">
-          <span>Go for a walk</span>
-          <input type="checkbox" name="1" id="1" />
-        </label>
-        <label for="2">
-          <span>Listen to music</span>
-          <input type="checkbox" name="2" id="2" />
-        </label>
-        <label for="3">
-          <span>Take deep breaths</span>
-          <input type="checkbox" name="3" id="3" />
+        <label v-for="activity in activities" :key="activity.id" :for="activity.id">
+          <span>{{ activity.name }}</span>
+          <input
+            type="checkbox"
+            :name="activity.id"
+            :id="activity.id"
+            v-model="activity.effective"
+          />
         </label>
       </section>
 

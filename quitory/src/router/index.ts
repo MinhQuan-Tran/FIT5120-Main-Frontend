@@ -95,7 +95,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth) {
     const authStore = useAuthStore();
 
-    console.log('Auth status:', authStore.status);
+    if (import.meta.env.DEV) console.log('Auth status:', authStore.status);
 
     if (authStore.status === AuthStatus.Unauthenticated) {
       return {

@@ -4,7 +4,7 @@
 
     props: {
       startTime: {
-        type: [Date, String],
+        type: [Date, null],
         required: false,
         default: null,
       },
