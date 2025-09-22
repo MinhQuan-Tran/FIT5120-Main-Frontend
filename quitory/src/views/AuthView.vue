@@ -1,75 +1,80 @@
 <script lang="ts">
-  import { defineComponent, ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { defineComponent } from 'vue';
+  import { mapStores } from 'pinia';
   import useAuthStore from '@/stores/authStore';
-
-  // TODO: Fix error handling for popup
-  // TODO: Convert to Options API
 
   export default defineComponent({
     name: 'AuthView',
 
-    setup() {
-      const authStore = useAuthStore();
-      const router = useRouter();
-      const loading = ref(false);
-      const err = ref<string | null>(null);
-
-      // Function to handle sending error back to the opener (if this is a popup)
-      const handlePopupError = (error: string, errorDescription?: string) => {
-        const isPopup = window.opener && window.opener !== window; // check if it's a popup
-        if (isPopup) {
-          const payload = {
-            source: 'oauth-popup',
-            provider: 'google',
-            ok: false,
-            error: error,
-            error_description: errorDescription,
-          };
-          // Send the error to the parent window
-          window.opener.postMessage(payload, window.location.origin);
-          window.close(); // Close the popup after sending the message
-        }
+    data() {
+      return {
+        loading: false as boolean,
+        err: null as string | null,
       };
+    },
 
-      // Check if the URL contains an error from the Google sign-in process
-      onMounted(() => {
-        const urlParams = new URLSearchParams(window.location.hash.replace('#', ''));
-        const error = urlParams.get('error');
-        const state = urlParams.get('state');
+    computed: {
+      // Expose Pinia store in Options API
+      ...mapStores(useAuthStore),
+    },
 
-        if (error && state === 'popup') {
-          handlePopupError(error, urlParams.get('error_description') ?? undefined);
-          authStore.err = error;
-        }
-      });
+    methods: {
+      // Send popup error to opener and close the popup
+      handlePopupError(error: string, errorDescription?: string) {
+        const isPopup = !!(window.opener && window.opener !== window);
+        if (!isPopup) return;
 
-      // Sign-in function triggering login via authStore
-      const signInWithGoogle = async () => {
-        loading.value = true;
-        err.value = null;
+        const payload = {
+          source: 'oauth-popup',
+          provider: 'google',
+          ok: false,
+          error,
+          error_description: errorDescription,
+        };
 
         try {
-          // Trigger the login from authStore
-          await authStore.login();
-
-          // After successful login, navigate to the next path or home
-          const next = router.currentRoute.value.query.next;
-          const nextPath = Array.isArray(next) ? next[0] : next;
-          router.push((nextPath as string) || '/');
-        } catch {
-          // Handle any error that occurs during login
-          err.value = authStore.err || 'Login failed';
+          window.opener!.postMessage(payload, window.location.origin);
         } finally {
-          loading.value = false;
+          // Close the popup after posting the message
+          setTimeout(() => window.close(), 0);
         }
-      };
+      },
 
-      return {
-        signInWithGoogle,
-        loading,
-        err,
-      };
+      async signInWithGoogle() {
+        if (this.loading) return;
+        this.loading = true;
+        this.err = null;
+
+        try {
+          await this.authenticationStore.login();
+
+          // Navigate to ?next=... or home
+          const q = this.$route?.query?.next;
+          const nextPath = Array.isArray(q) ? q[0] : q;
+          await this.$router.push((nextPath as string) || '/');
+        } catch {
+          // Show friendly message from store if available
+          this.err = this.authenticationStore.err || 'Login failed';
+        } finally {
+          this.loading = false;
+        }
+      },
+    },
+
+    mounted() {
+      // Detect OAuth errors when this page is used as the popup redirect
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const error = params.get('error');
+      const state = params.get('state');
+
+      if (error && state === 'popup') {
+        this.handlePopupError(error, params.get('error_description') ?? undefined);
+        // Store raw (or map to friendly if you prefer):
+        // this.authenticationStore.err = this.authenticationStore.getFriendlyErrorMessage
+        //   ? this.authenticationStore.getFriendlyErrorMessage(error)
+        //   : error;
+        this.authenticationStore.err = error;
+      }
     },
   });
 </script>

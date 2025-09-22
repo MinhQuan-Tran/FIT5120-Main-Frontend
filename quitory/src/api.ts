@@ -67,6 +67,10 @@ const api = {
     async fetch() {
       return createRequest('auth/currentUser', { method: 'GET' });
     },
+
+    async setup(data: { name: string }) {
+      return createRequest('auth/setup', { method: 'POST', body: data });
+    },
   },
 
   sessions: {
