@@ -145,7 +145,7 @@
       </section>
 
       <section class="activity-log">
-        <h2 class="title">Which activities where effective?</h2>
+        <h2 class="title">Which activities were effective?</h2>
         <label v-for="activity in activities" :key="activity.id" :for="activity.id">
           <span>{{ activity.name }}</span>
           <input
