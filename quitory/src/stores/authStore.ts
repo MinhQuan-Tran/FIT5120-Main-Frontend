@@ -3,6 +3,7 @@ import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-so
 import api from '@/api';
 
 import { type User, AuthStatus } from '@/types/user';
+import { useNotiStore } from './notiStore';
 
 export const useAuthStore = defineStore('authentication', {
   state: () => ({
@@ -23,9 +24,8 @@ export const useAuthStore = defineStore('authentication', {
       });
     },
 
-    fetchToken(): Promise<string | null> {
-      // TODO: retrieve and return a valid auth token here
-      return Promise.resolve(this.idToken);
+    fetchToken() {
+      if (!this.idToken) this.idToken = sessionStorage.getItem('idToken');
     },
 
     async login() {
@@ -63,10 +63,26 @@ export const useAuthStore = defineStore('authentication', {
 
             if (import.meta.env.DEV) console.log('Logged in successfully:', this.user);
 
+            sessionStorage.setItem('idToken', this.idToken as string);
+
+            const notiStore = useNotiStore();
+            notiStore.push({
+              title: 'Login successful',
+              variant: 'success',
+            });
+
             this.loading = false;
           })
           .catch((apiError) => {
             console.error('Login API error:', apiError);
+
+            const notiStore = useNotiStore();
+            notiStore.push({
+              title: 'Login failed',
+              content: apiError.message || 'Unable to log in. Please try again.',
+              variant: 'danger',
+            });
+
             throw apiError;
           });
       } catch (error) {
