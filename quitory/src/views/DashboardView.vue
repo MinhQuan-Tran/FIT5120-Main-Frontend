@@ -30,7 +30,10 @@
 
           if (import.meta.env.DEV) console.log('Milestone response:', response);
 
-          this.milestone = response.data;
+          this.milestone = {
+            start_time: new Date(response.data.start_time),
+            ...response.data,
+          } as Milestone;
 
           setTimeout(() => {
             this.progress = Math.min(
@@ -93,29 +96,9 @@
     </section>
 
     <!-- Summary: days + progress + quick stats -->
-    <section class="summary">
-      <div class="summary-days">
-        <div class="summary-num">23</div>
-        <div class="summary-label">Days Vape-Free</div>
-      </div>
+    <section v-if="milestone" class="summary">No active milestone</section>
 
-      <div class="progress">
-        <progress :value="progress" max="100"></progress>
-        <div class="progress-hint">{{ progress }}% to {{ milestone.duration }}-day milestone</div>
-      </div>
-
-      <div class="summary-stats">
-        <div class="stat stat-green">
-          <div class="stat-value">${{ moneySaved }}</div>
-          <div class="stat-label">Money Saved</div>
-        </div>
-        <!-- TODO: Time saved -->
-        <div class="stat stat-blue">
-          <div class="stat-value">{{ timeWasted }}</div>
-          <div class="stat-label">Time Wasted</div>
-        </div>
-      </div>
-    </section>
+    <section v-else class="summary"></section>
 
     <PopupNotification variant="danger" title="Danger Time Alert">
       You're approaching a high-risk window. Stay strong!

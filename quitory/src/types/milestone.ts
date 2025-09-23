@@ -1,7 +1,8 @@
 export default interface Milestone {
   id: string;
-  start_time: string; // ISO 8601 date string
+  start_time: Date; // ISO 8601 date string
   duration: number; // in days
+  progress: number; // percentage 0-100
   status: 'active' | 'success' | 'failed';
   targets: MilestoneTarget[];
 }
