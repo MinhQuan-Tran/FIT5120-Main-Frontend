@@ -1,7 +1,6 @@
 <script lang="ts">
   import { defineAsyncComponent } from 'vue';
-  import { mapState } from 'pinia';
-  import useAuthStore from '@/stores/authStore';
+  import { useAuthStore } from '@/stores/authStore';
   import Skeleton from '@/components/ui/SkeletonUI.vue';
   import { AuthStatus } from '@/types/user';
 
@@ -14,18 +13,18 @@
       Skeleton,
     },
 
-    computed: {
-      ...mapState(useAuthStore, ['status']),
-      AuthStatus() {
-        return AuthStatus;
-      },
+    data() {
+      return {
+        AuthStatus,
+        authStore: useAuthStore(),
+      };
     },
 
     methods: {
       maybeRedirect() {
         // Check if the user is authenticated and there's a next route
         const next = this.$route.query.next;
-        if (this.status === 'authenticated' && typeof next === 'string') {
+        if (this.authStore.status === AuthStatus.Authenticated && typeof next === 'string') {
           this.$router.replace(next);
         }
       },
@@ -45,12 +44,12 @@
 
 <template>
   <!-- While auth is booting -->
-  <Skeleton v-if="status === AuthStatus.Loading" :bars="1" :cards="2" />
+  <Skeleton v-if="authStore.status === AuthStatus.Loading" :bars="1" :cards="2" />
 
   <Suspense v-else>
     <template #default>
       <!-- Render Dashboard if authenticated, otherwise Landing -->
-      <component :is="status === AuthStatus.Authenticated ? 'Dashboard' : 'Landing'" />
+      <component :is="authStore.status === AuthStatus.Authenticated ? 'Dashboard' : 'Landing'" />
     </template>
 
     <!-- Async view fallback -->

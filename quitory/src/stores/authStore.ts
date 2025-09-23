@@ -4,7 +4,7 @@ import api from '@/api';
 
 import { type User, AuthStatus } from '@/types/user';
 
-const useAuthStore = defineStore('authentication', {
+export const useAuthStore = defineStore('authentication', {
   state: () => ({
     user: null as User | null,
     idToken: null as string | null,
@@ -50,13 +50,14 @@ const useAuthStore = defineStore('authentication', {
 
             const user = data.data;
 
-            if (!user || !user.id || !user.name) {
+            if (!user || !user.id) {
+              // Null name is allowed (new user not set up yet)
               throw new Error('Invalid user data from login API');
             }
 
             this.user = {
               id: String(user.id),
-              name: String(user.name),
+              name: user.name ? String(user.name) : undefined,
               profilePictureURL: `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`,
             };
 
@@ -106,11 +107,9 @@ const useAuthStore = defineStore('authentication', {
   getters: {
     status(): AuthStatus {
       // Ignore auth status during development
-      if (import.meta.env.DEV) return AuthStatus.Authenticated;
+      // if (import.meta.env.DEV) return AuthStatus.Authenticated;
 
       return this.user ? AuthStatus.Authenticated : AuthStatus.Unauthenticated;
     },
   },
 });
-
-export default useAuthStore;

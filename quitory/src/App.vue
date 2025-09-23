@@ -4,7 +4,7 @@
   import { Capacitor } from '@capacitor/core';
 
   import NavBar from '@/components/layout/NavBar.vue';
-  import useAuthStore from '@/stores/authStore';
+  import { useAuthStore } from '@/stores/authStore';
   import NotificationCenter from './components/ui/NotificationCenter.vue';
 
   import { AuthStatus } from '@/types/user';
@@ -30,6 +30,11 @@
       },
 
       showNavBar(): boolean {
+        // Never show navigation bar in Auth or Setup views
+        if (this.$route?.name && ['Auth', 'Setup'].includes(String(this.$route.name))) {
+          return false;
+        }
+
         // Show navigation bar if authenticated
         return this.auth.status === AuthStatus.Authenticated;
       },

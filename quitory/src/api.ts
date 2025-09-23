@@ -1,4 +1,6 @@
-import useAuthStore from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useNotiStore } from '@/stores/notiStore';
+import router from '@/router';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 type QueryParams = Record<string, string | number | boolean>;
@@ -45,6 +47,41 @@ async function createRequest(resource: string, options: RequestOptions) {
 
     if (!res.ok) {
       const errorText = await res.text();
+
+      const notiStore = useNotiStore();
+      switch (res.status) {
+        case 401:
+          notiStore.push({
+            title: 'Session expired. Please log in again.',
+            variant: 'danger',
+          });
+          authStore.user = null;
+          authStore.idToken = null;
+
+          console.log('Redirecting to login page due to 401 Unauthorized');
+
+          router.push({ name: 'Auth' });
+          break;
+        case 403:
+          notiStore.push({
+            title: 'You do not have permission to perform this action.',
+            variant: 'danger',
+          });
+          break;
+        case 500:
+          notiStore.push({
+            title: 'Server error',
+            content: 'Please try again later.',
+            variant: 'danger',
+          });
+          break;
+        default:
+          notiStore.push({
+            title: `Error: ${res.status} ${res.statusText}`,
+            variant: 'danger',
+          });
+      }
+
       throw new Error(
         `API ${options.method} ${url} failed: ${res.status} ${res.statusText} - ${errorText}`,
       );
