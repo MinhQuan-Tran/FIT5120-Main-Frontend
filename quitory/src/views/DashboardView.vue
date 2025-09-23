@@ -5,6 +5,8 @@
   import { useAuthStore } from '@/stores/authStore';
   import PopupNotification from '@/components/ui/PopupNotification.vue';
 
+  import type Milestone from '@/types/milestone';
+
   export default {
     components: {
       PopupNotification,
@@ -12,14 +14,39 @@
 
     data() {
       return {
+        milestone: {} as Milestone,
         progress: 0,
         timeWasted: 0,
         moneySaved: 0,
-        targets: [] as Array<{ label: string; value: number; completed: boolean }>,
       };
     },
 
     methods: {
+      async fetchMilestone() {
+        if (import.meta.env.DEV) console.log('Fetching milestone...');
+
+        try {
+          const response = await api.milestones.current();
+
+          if (import.meta.env.DEV) console.log('Milestone response:', response);
+
+          this.milestone = response.data;
+
+          setTimeout(() => {
+            this.progress = Math.min(
+              100,
+              Math.round(
+                ((new Date().getTime() - new Date(this.milestone.start_time).getTime()) /
+                  (this.milestone.duration * 24 * 60 * 60 * 1000)) *
+                  100,
+              ),
+            );
+          }, 300);
+        } catch (error) {
+          console.error('Error fetching milestone:', error);
+        }
+      },
+
       async fetchTrackers() {
         if (import.meta.env.DEV) console.log('Fetching trackers...');
 
@@ -44,18 +71,8 @@
     },
 
     mounted() {
-      setTimeout(() => {
-        this.progress = 76;
-      }, 1500);
-
+      this.fetchMilestone();
       this.fetchTrackers();
-
-      this.targets = [
-        { label: 'Time wasted on vaping', value: 1, completed: false },
-        { label: 'Money spent on vaping', value: 1, completed: false },
-        { label: 'Number of vapes', value: 1, completed: false },
-        { label: 'Stay vape-free', value: 1, completed: false },
-      ];
     },
   };
 </script>
@@ -84,7 +101,7 @@
 
       <div class="progress">
         <progress :value="progress" max="100"></progress>
-        <div class="progress-hint">{{ progress }}% to 30-day milestone</div>
+        <div class="progress-hint">{{ progress }}% to {{ milestone.duration }}-day milestone</div>
       </div>
 
       <div class="summary-stats">
@@ -113,16 +130,14 @@
     <!-- targets -->
     <section class="targets" aria-labelledby="targets-title">
       <div class="targets-header">
-        <b id="targets-title" class="section-title">Today's targets</b>
+        <b id="targets-title" class="section-title">Milestone Targets</b>
       </div>
 
       <br />
 
       <div class="targets-list">
-        <label v-for="target in targets" :key="target.label" class="goal-item">
-          <input type="checkbox" v-model="target.completed" />
-          <span class="goal-check" aria-hidden="true"></span>
-          <span class="goal-text">{{ target.label }}</span>
+        <label v-for="target in milestone.targets" :key="target.type" class="target-item">
+          <span class="name">{{ target.name }}</span>
         </label>
       </div>
     </section>
@@ -326,27 +341,27 @@
   }
 
   /* Text */
-  .goal-text {
+  .name {
     font-size: 15px;
     color: #374151; /* gray-700 */
   }
 
-  .goal-item:active {
+  .target-item:active {
     transform: scale(0.99);
   }
 
   /* Row visuals when checked (Chromium supports :has) */
-  .goal-item:has(input:checked) {
+  .target-item:has(input:checked) {
     background: #ecfdf5; /* green-50 */
     border-color: #bbf7d0; /* green-200 */
   }
-  .goal-item:has(input:checked) .goal-text {
+  .target-item:has(input:checked) .name {
     color: #6b7280; /* gray-500 */
     text-decoration: line-through;
   }
 
   /* Focus ring */
-  .goal-item:focus-within {
+  .target-item:focus-within {
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.15);
     border-color: #bfdbfe; /* blue-200 */

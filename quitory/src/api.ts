@@ -109,6 +109,23 @@ const api = {
     },
   },
 
+  milestones: {
+    async all() {
+      return createRequest('milestones', { method: 'GET' });
+    },
+
+    async current() {
+      return createRequest('milestones/current', { method: 'GET' });
+    },
+
+    async create(data: { duration: number; targets: [{ type: string; target: number }] }) {
+      return createRequest('milestones', {
+        method: 'POST',
+        body: data,
+      });
+    },
+  },
+
   sessions: {
     async createCravingLog(data: {
       startTime: Date;
