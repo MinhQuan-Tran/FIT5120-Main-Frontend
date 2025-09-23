@@ -21,7 +21,7 @@
     methods: {
       // Send popup error to opener and close the popup
       handlePopupError(error: string, errorDescription?: string) {
-        const isPopup = !!(window.opener && window.opener !== window);
+        const isPopup = window.opener && window.opener !== window;
         if (!isPopup) return;
 
         const payload = {
