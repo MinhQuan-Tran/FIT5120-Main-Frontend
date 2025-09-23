@@ -59,7 +59,7 @@
             variant: 'success',
           });
 
-          this.$router.push({ name: 'Onboarding' });
+          await this.$router.push({ name: 'Onboarding' });
         } finally {
           this.loading = false;
         }
