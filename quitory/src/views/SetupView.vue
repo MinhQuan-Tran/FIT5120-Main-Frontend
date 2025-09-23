@@ -59,7 +59,8 @@
             variant: 'success',
           });
 
-          await this.$router.push({ name: 'Onboarding' });
+          // TODO: Redirect to Onboarding
+          await this.$router.push({ name: 'Home' });
         } finally {
           this.loading = false;
         }
