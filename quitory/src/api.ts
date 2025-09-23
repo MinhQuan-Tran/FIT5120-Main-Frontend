@@ -29,13 +29,12 @@ function buildUrl(resource: string, queryParams?: QueryParams): string {
 
 async function createRequest(resource: string, options: RequestOptions) {
   const authStore = useAuthStore();
-  const token = await authStore.fetchToken();
 
   const url = buildUrl(resource, options.queryParams);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${authStore.idToken}`,
   };
 
   try {

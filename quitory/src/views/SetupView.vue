@@ -4,6 +4,7 @@
   import { defineComponent } from 'vue';
 
   import { useNotiStore } from '@/stores/notiStore';
+  import { useAuthStore } from '@/stores/authStore';
 
   import { getNameSuggestions } from '@/utils/namePool';
 
@@ -19,7 +20,7 @@
     },
 
     computed: {
-      ...mapStores(useNotiStore),
+      ...mapStores(useNotiStore, useAuthStore),
 
       canContinue(): boolean {
         return !!this.selected;
@@ -51,7 +52,14 @@
         if (!this.selected || this.loading) return;
         this.loading = true;
         try {
-          await api.user.setup({ name: this.selected });
+          const response = await api.user.setup({ name: this.selected });
+          console.log('Setup response:', response);
+
+          if (response.code !== 200 || !response.data) {
+            throw new Error(response.error || 'Failed to set display name');
+          }
+
+          this.authenticationStore.user = response.data;
 
           this.notificationStore.push({
             title: 'Success',
