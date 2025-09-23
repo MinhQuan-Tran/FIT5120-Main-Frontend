@@ -15,7 +15,6 @@
     data() {
       return {
         milestone: {} as Milestone,
-        progress: 0,
         timeWasted: 0,
         moneySaved: 0,
       };
@@ -36,7 +35,7 @@
           } as Milestone;
 
           setTimeout(() => {
-            this.progress = Math.min(
+            this.milestone.progress = Math.min(
               100,
               Math.round(
                 ((new Date().getTime() - new Date(this.milestone.start_time).getTime()) /
@@ -96,9 +95,31 @@
     </section>
 
     <!-- Summary: days + progress + quick stats -->
-    <section v-if="milestone" class="summary">No active milestone</section>
+    <section class="summary">
+      <div class="summary-days">
+        <div class="summary-num">23</div>
+        <div class="summary-label">Days Vape-Free</div>
+      </div>
 
-    <section v-else class="summary"></section>
+      <div class="progress">
+        <progress :value="milestone.progress ?? 0" max="100"></progress>
+        <div class="progress-hint">
+          {{ milestone.progress ?? 0 }}% to {{ milestone.duration ?? 0 }}-day milestone
+        </div>
+      </div>
+
+      <div class="summary-stats">
+        <div class="stat stat-green">
+          <div class="stat-value">${{ moneySaved ?? 0 }}</div>
+          <div class="stat-label">Money Saved</div>
+        </div>
+        <!-- TODO: Time saved -->
+        <div class="stat stat-blue">
+          <div class="stat-value">{{ timeWasted ?? 0 }}</div>
+          <div class="stat-label">Time Wasted</div>
+        </div>
+      </div>
+    </section>
 
     <PopupNotification variant="danger" title="Danger Time Alert">
       You're approaching a high-risk window. Stay strong!
