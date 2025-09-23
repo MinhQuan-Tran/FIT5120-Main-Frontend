@@ -1,7 +1,7 @@
 <script lang="ts">
   import { mapStores } from 'pinia';
 
-  import useAuthStore from '@/stores/authStore';
+  import { useAuthStore } from '@/stores/authStore';
 
   export default {
     computed: {

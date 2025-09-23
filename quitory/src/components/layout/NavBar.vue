@@ -14,19 +14,24 @@
       Journey
     </RouterLink>
 
-    <RouterLink to="/group">
+    <!-- <RouterLink to="/group">
       <img src="" alt="" />
       Group
-    </RouterLink>
+    </RouterLink> -->
 
     <RouterLink to="/session">
       <img src="" alt="" />
       Session
     </RouterLink>
 
-    <RouterLink to="/profile">
+    <!-- <RouterLink to="/profile">
       <img src="" alt="" />
       Profile
+    </RouterLink> -->
+
+    <RouterLink to="/setup">
+      <img src="" alt="" />
+      Setup
     </RouterLink>
   </nav>
 </template>

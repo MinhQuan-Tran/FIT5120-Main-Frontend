@@ -3,7 +3,7 @@ import HomeView from '@/views/HomeView.vue';
 
 import isPasswordValid from '@/utils/authGate';
 
-import useAuthStore from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { AuthStatus } from '@/types/user';
 
 const router = createRouter({
@@ -64,6 +64,22 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/setup',
+      name: 'Setup',
+      component: () => import('@/views/SetupView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/onboarding',
+      name: 'Onboarding',
+      component: () => import('@/views/OnboardingView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
 });
 
@@ -91,10 +107,9 @@ router.beforeEach(async (to) => {
     }
   }
 
+  const authStore = useAuthStore();
   // Authentication check
   if (to.meta.requiresAuth) {
-    const authStore = useAuthStore();
-
     if (import.meta.env.DEV) console.log('Auth status:', authStore.status);
 
     if (authStore.status === AuthStatus.Unauthenticated) {
@@ -102,6 +117,16 @@ router.beforeEach(async (to) => {
         name: 'Auth',
       };
     }
+  }
+
+  if (
+    authStore.status === AuthStatus.Authenticated &&
+    authStore.user?.name === undefined &&
+    to.name !== 'Setup'
+  ) {
+    return {
+      name: 'Setup',
+    };
   }
 
   return true;

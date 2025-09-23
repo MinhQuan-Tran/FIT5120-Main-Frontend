@@ -2,7 +2,7 @@
   import { mapStores } from 'pinia';
   import api from '@/api';
 
-  import useAuthStore from '@/stores/authStore';
+  import { useAuthStore } from '@/stores/authStore';
   import PopupNotification from '@/components/ui/PopupNotification.vue';
 
   export default {
