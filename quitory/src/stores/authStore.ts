@@ -58,7 +58,7 @@ export const useAuthStore = defineStore('authentication', {
             this.user = {
               id: String(user.id),
               name: user.name ? String(user.name) : undefined,
-              profilePictureURL: `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`,
+              profilePictureURL: `https://ui-avatars.com/api/?name=${user.name ? encodeURIComponent(user.name) : ''}&background=3b82f6&color=fff`,
             };
 
             if (import.meta.env.DEV) console.log('Logged in successfully:', this.user);
